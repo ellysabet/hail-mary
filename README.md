@@ -1,16 +1,154 @@
-# React + Vite
+# 🚀 프로젝트 헤일메리 - 우주산업 진로탐험
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+중학생 대상 우주산업 진로교육 프로그램
 
-Currently, two official plugins are available:
+## 📖 프로그램 소개
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+**프로젝트 헤일메리**는 중학생들이 우주산업 관련 직업을 체험하며, 팀 활동을 통해 협력과 문제해결 능력을 키우는 인터랙티브 교육 프로그램입니다.
 
-## React Compiler
+### 주요 특징
+- ⏱️ **90분 수업** (2교시, 45분 × 2)
+- 👥 **팀 기반 활동** (4명/팀, 최대 35명)
+- 🎮 **6개 라운드** 미션 (오프라인 3개, 웹 3개)
+- 👨‍🏫 **교사 관제 시스템**
+- 📊 **실시간 점수 집계**
+- 🏆 **등급 시스템** (우주 마스터 ~ 우주 초보자)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎯 라운드 구성
 
-## Expanding the ESLint configuration
+| 라운드 | 주제 | 핵심 직업 | 활동 유형 | 시간 |
+|--------|------|-----------|-----------|------|
+| Round 1 | 행성 발견 | 우주생물학자 | 웹 (카드 매칭) | 7분 |
+| Round 2 | 로켓 발사 | 항공우주 엔지니어 | 오프라인 (로켓 설계) | 12분 |
+| Round 3 | 우주 에너지 | 에너지 시스템 엔지니어 | 웹 (태양전지판) | 8분 |
+| Round 4 | 행성 탐사 | 로봇공학자 | 오프라인 (경로 설계) | 10분 |
+| Round 5 | 지구 귀환 | 궤도 역학 전문가 | 웹 (Swing-by) | 9분 |
+| Round 6 | 우주의 미래 | 우주 쓰레기 처리 전문가 | 웹 (포스터 제작) | 15분 |
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+**총점**: 1050점
+
+## 🚀 빠른 시작
+
+### 1. 파일 다운로드
+```bash
+# 저장소 클론
+git clone [your-repo-url]
+cd project-hailmary
+```
+
+### 2. 바로 실행
+브라우저에서 `index.html` 파일을 열면 바로 사용 가능합니다!
+
+**필요 환경:**
+- 최신 웹 브라우저 (Chrome, Edge, Firefox, Safari)
+- 인터넷 연결 불필요 (LocalStorage 사용)
+
+### 3. GitHub Pages 배포
+1. GitHub 저장소 생성
+2. `index.html` 업로드
+3. Settings → Pages → Branch: main 선택
+4. 배포 완료!
+
+## 📱 사용 방법
+
+### 교사용
+1. **수업 시작하기** 클릭
+2. 팀 정보 입력 (팀명, 팀원 이름)
+3. 세션 코드 생성 (6자리)
+4. 각 라운드 시작/종료 제어
+5. 최종 결과 발표
+
+### 학생용
+1. **미션 참여하기** 클릭
+2. 세션 코드 입력
+3. 이름 및 팀 선택
+4. 라운드별 미션 수행
+5. 퀴즈 풀기
+6. 최종 결과 확인
+
+## 🎨 주요 기능
+
+### 학생 화면
+- ✅ 라운드별 스토리 (이미지 + 텍스트)
+- ✅ 직업 소개 (핵심 직업 강조)
+- ✅ 웹 미션 (카드 매칭, 포스터 제작 등)
+- ✅ 실시간 점수 확인
+- ✅ 퀴즈 (미션 힌트 제공)
+- ✅ 최종 등급 및 순위
+
+### 교사 대시보드
+- ✅ 세션 코드 관리
+- ✅ 팀 목록 및 점수 현황
+- ✅ 라운드 제어 (시작/일시정지)
+- ✅ 실시간 모니터링
+- ✅ 최종 결과 발표 버튼
+
+### Round 6 포스터 제작 툴
+- ✅ 3가지 템플릿 (인포그래픽/만화/미니멀)
+- ✅ 내용 입력 폼
+- ✅ 배경색 선택
+- ✅ 실시간 미리보기
+- ✅ 갤러리 투표 시스템
+
+## 💾 데이터 저장
+
+### LocalStorage 사용
+- 세션 데이터
+- 팀 정보 및 점수
+- 학생 진행 상황
+
+**주의:** 브라우저 시크릿 모드에서는 데이터가 저장되지 않습니다!
+
+## 🎓 교육 목표
+
+### 인지적 영역
+- 우주산업 직업군 이해
+- 과학적 원리 학습 (중력, 궤도, 에너지 등)
+- 문제해결 능력 향상
+
+### 정의적 영역
+- 진로 탐색 동기 부여
+- 우주 환경 보호 의식
+- 협업 능력 향상
+
+### 기능적 영역
+- 디지털 리터러시
+- 창의적 문제해결
+- 의사소통 능력
+
+## 📊 평가 기준
+
+### 등급 시스템
+- 🥇 **우주 마스터** (1위)
+- 🥈 **우주 전문가** (2위)
+- 🥉 **우주 탐험가** (3위)
+- ⭐ **우주 개척자** (800점 이상)
+- 🌟 **우주 도전자** (600점 이상)
+- ✨ **우주 초보자** (그 외)
+
+## 🛠️ 기술 스택
+
+- **Frontend**: HTML5, CSS3, Vanilla JavaScript
+- **Storage**: LocalStorage API
+- **Design**: Gradient UI, Responsive Design
+- **Animation**: CSS Animations
+
+## 📝 라이선스
+
+MIT License
+
+## 👤 개발자
+
+개발: **Elly (Soojeong)** | 2026
+
+- 코딩/SW 교육 전문강사 (10년 경력)
+- AI 아티스트 (soojeongdaum | Crystalism)
+
+## 📞 문의
+
+- 수정 요청 및 버그 리포트: GitHub Issues
+- 교육 문의: ellysabet81@gmail.com
+
+---
+
+**⭐ Star this project if you find it helpful!**
