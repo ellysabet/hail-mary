@@ -947,6 +947,36 @@
         
         // ========== 교사 설정 화면 ==========
         function renderTeacherSetup() {
+            const password = sessionStorage.getItem('teacher_password') || '';
+            
+            // 암호 확인
+            if (password !== 'teacher2026') {
+                return `
+                    <div class="card text-center">
+                        <h2>👨‍🏫 교사 전용 페이지</h2>
+                        <p style="margin-top: 1rem;">교사 암호를 입력하세요</p>
+                        
+                        <input type="password" id="teacherPassword" 
+                               placeholder="교사 암호 입력" 
+                               style="width: 100%; max-width: 300px; padding: 12px; margin: 1rem auto; 
+                                      background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); 
+                                      border-radius: 8px; color: white; font-size: 1.2rem; text-align: center;">
+                        
+                        <button class="btn btn-primary mt-2" onclick="checkTeacherPassword()">
+                            확인
+                        </button>
+                        
+                        <button class="btn btn-secondary mt-2" onclick="goHome()">
+                            돌아가기
+                        </button>
+                        
+                        <p class="text-small mt-2" style="color: rgba(255,255,255,0.6);">
+                            암호: teacher2026
+                        </p>
+                    </div>
+                `;
+            }
+            
             return `
                 <div class="card">
                     <h2>🎮 수업 설정</h2>
@@ -1648,7 +1678,19 @@
         
         function goToTeacherSetup() {
             currentScreen = 'teacher-setup';
+            sessionStorage.removeItem('teacher_password'); // 암호 초기화
             render();
+        }
+        
+        function checkTeacherPassword() {
+            const input = document.getElementById('teacherPassword');
+            if (input.value === 'teacher2026') {
+                sessionStorage.setItem('teacher_password', 'teacher2026');
+                render();
+            } else {
+                alert('❌ 암호가 올바르지 않습니다!');
+                input.value = '';
+            }
         }
         
         function goToStudentCode() {
@@ -1731,9 +1773,13 @@
         
         let dataInterval;
         function startDataRefresh() {
-            // 자동 새로고침 비활성화 - 깜빡임 방지
-            // 필요시 수동 새로고침만 사용
             if (dataInterval) clearInterval(dataInterval);
+            // 학생 게임 화면에서만 자동 새로고침
+            if (currentScreen === 'student-game') {
+                dataInterval = setInterval(() => {
+                    render();
+                }, 5000); // 5초마다 새로고침
+            }
         }
         
         function toggleTeamCreate() {
