@@ -1,0 +1,362 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%);
+  min-height: 100vh;
+  color: white;
+  overflow-x: hidden;
+  position: relative;
+  font-size: clamp(14px, 2vw, 16px);
+}
+
+/* 라운드별 배경 테마 */
+body.round-1-bg { 
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.3) 0%, rgba(49, 46, 129, 0.3) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+body.round-2-bg { 
+  background: linear-gradient(135deg, rgba(153, 27, 27, 0.3) 0%, rgba(124, 45, 18, 0.3) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+body.round-3-bg { 
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.2) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+body.round-4-bg { 
+  background: linear-gradient(135deg, rgba(6, 95, 70, 0.3) 0%, rgba(6, 78, 59, 0.3) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+body.round-5-bg { 
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.3) 0%, rgba(30, 58, 138, 0.3) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+body.round-6-bg { 
+  background: linear-gradient(135deg, rgba(76, 29, 149, 0.3) 0%, rgba(91, 33, 182, 0.3) 100%), 
+              linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%); 
+}
+
+/* 컨테이너 - 반응형 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2rem);
+  position: relative;
+  z-index: 1;
+}
+
+/* 카드 - 반응형 */
+.card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: clamp(12px, 3vw, 20px);
+  padding: clamp(1rem, 3vw, 2rem);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.card-large {
+  padding: clamp(1.5rem, 4vw, 3rem);
+  max-width: 600px;
+  margin: clamp(1rem, 3vw, 2rem) auto;
+}
+
+.card-medium {
+  max-width: 900px;
+  margin: clamp(0.5rem, 2vw, 1rem) auto;
+}
+
+/* 버튼 - 반응형 */
+.btn {
+  padding: clamp(10px, 2vw, 12px) clamp(16px, 3vw, 24px);
+  border: none;
+  border-radius: clamp(8px, 2vw, 12px);
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  width: 100%;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-large {
+  padding: clamp(12px, 3vw, 16px) clamp(20px, 4vw, 32px);
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 텍스트 - 반응형 */
+.text-center {
+  text-align: center;
+}
+
+.text-small {
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+  opacity: 0.8;
+}
+
+.subtitle {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+  margin-bottom: clamp(1rem, 3vw, 2rem);
+  opacity: 0.9;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+h2 {
+  font-size: clamp(1.5rem, 3.5vw, 2rem);
+}
+
+h3 {
+  font-size: clamp(1.2rem, 3vw, 1.5rem);
+}
+
+h4 {
+  font-size: clamp(1rem, 2.5vw, 1.2rem);
+}
+
+p {
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  line-height: 1.6;
+}
+
+/* 마진 */
+.mt-1 { margin-top: 0.5rem; }
+.mt-2 { margin-top: 1rem; }
+.mt-3 { margin-top: 1.5rem; }
+
+/* 로고 애니메이션 */
+.logo-pulse {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Alert - 반응형 */
+.alert {
+  padding: clamp(0.75rem, 2vw, 1rem);
+  border-radius: clamp(8px, 2vw, 12px);
+  margin-top: 1rem;
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+}
+
+.alert-success {
+  background: rgba(34, 197, 94, 0.2);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+}
+
+.alert-warning {
+  background: rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(251, 191, 36, 0.5);
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+/* 로딩 */
+.loading {
+  text-align: center;
+  padding: 2rem;
+}
+
+/* Round Badge - 반응형 */
+.round-badge {
+  display: inline-block;
+  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: clamp(15px, 3vw, 20px);
+  font-size: clamp(0.8rem, 1.8vw, 0.9rem);
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Story Box - 반응형 */
+.story-box {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: clamp(8px, 2vw, 12px);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  margin: 1rem 0;
+  line-height: 1.8;
+}
+
+/* Job Cards - 반응형 */
+.job-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(250px, 100%), 1fr));
+  gap: clamp(0.75rem, 2vw, 1rem);
+  margin-top: 1rem;
+}
+
+.job-card {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: clamp(8px, 2vw, 12px);
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  text-align: center;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+}
+
+.job-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+.job-card-primary {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.2) 0%, rgba(139, 92, 246, 0.2) 100%);
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(167, 139, 250, 0.4);
+}
+
+/* Quiz Options - 반응형 */
+.quiz-option {
+  width: 100%;
+  padding: clamp(0.75rem, 2vw, 1rem);
+  margin: 0.5rem 0;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: clamp(8px, 2vw, 12px);
+  color: white;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: left;
+}
+
+.quiz-option:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateX(4px);
+}
+
+.quiz-option.selected {
+  background: rgba(167, 139, 250, 0.3);
+  border-color: #a78bfa;
+}
+
+.quiz-option.correct {
+  background: rgba(34, 197, 94, 0.3);
+  border-color: #22c55e;
+}
+
+.quiz-option.wrong {
+  background: rgba(239, 68, 68, 0.3);
+  border-color: #ef4444;
+}
+
+.quiz-option:disabled {
+  cursor: not-allowed;
+}
+
+/* Input - 반응형 */
+input[type="text"],
+input[type="password"],
+input[type="number"] {
+  width: 100%;
+  padding: clamp(10px, 2vw, 12px);
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: clamp(6px, 1.5vw, 8px);
+  color: white;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+}
+
+input:focus {
+  outline: none;
+  border-color: #a78bfa;
+}
+
+input::placeholder {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Round Transition 애니메이션 */
+.round-transition {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 태블릿 세로 모드 (768px 이하) */
+@media (max-width: 768px) {
+  .job-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .card-large,
+  .card-medium {
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+  }
+}
+
+/* 모바일 가로 모드 (480px 이하) */
+@media (max-width: 480px) {
+  .container {
+    padding: 1rem 0.75rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* 큰 화면 (1400px 이상) */
+@media (min-width: 1400px) {
+  .container {
+    max-width: 1400px;
+  }
+}
