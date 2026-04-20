@@ -154,3 +154,37 @@ export function getAllSessions() {
       return [];
     });
 }
+// 세션 코드 생성
+export function generateSessionCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
+// 팀 목록 가져오기
+export function getTeams(sessionCode) {
+  return getSession(sessionCode).then((session) => {
+    return session ? session.teams : [];
+  });
+}
+
+// 배지 가져오기
+export function getBadge(sessionCode, teamId) {
+  return getSession(sessionCode).then((session) => {
+    if (!session) return null;
+    const team = session.teams.find((t) => t.id === teamId);
+    return team ? team.badge : null;
+  });
+}
+
+// 순위 가져오기
+export function getRank(sessionCode, teamId) {
+  return getSession(sessionCode).then((session) => {
+    if (!session) return 0;
+    const sortedTeams = [...session.teams].sort((a, b) => b.totalScore - a.totalScore);
+    return sortedTeams.findIndex((t) => t.id === teamId) + 1;
+  });
+}
