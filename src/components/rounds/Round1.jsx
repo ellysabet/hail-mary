@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { updateTeamScore, getSession, subscribeToSession } from '../../utils/storage';
-import { updateMemberScore } from '../../utils/storage';
+import { updateTeamScore, getSession, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
-// 찾아야 할 카드 (필수 4종)
 const REQUIRED_CARDS = [
   { icon: '💧', name: '물' },
   { icon: '☀️', name: '햇빛' },
@@ -10,7 +8,6 @@ const REQUIRED_CARDS = [
   { icon: '🌊', name: '대기' },
 ];
 
-// 전체 카드 페어 정의
 const CARD_PAIRS = [
   { icon: '💧', name: '물',  required: true },
   { icon: '☀️', name: '햇빛', required: true },
@@ -23,18 +20,21 @@ const CARD_PAIRS = [
 ];
 
 function Round1({ team, sessionCode }) {
-  const [stage, setStage] = useState('story'); // story → job → missionIntro → mission → quiz
+  // stage: story → job → missionIntro → mission → quiz
+  const [stage, setStage] = useState('story');
   const [cards, setCards] = useState([]);
   const [flipped, setFlipped] = useState([]);
-  const [matched, setMatched] = useState([]);       // icon 배열
-  const [requiredMatched, setRequiredMatched] = useState([]); // icon 배열
-  const [previewPhase, setPreviewPhase] = useState(false);   // 3초 앞면 보이기
-  const [previewCountdown, setPreviewCountdown] = useState(3);
+  const [matched, setMatched] = useState([]);
+  const [requiredMatched, setRequiredMatched] = useState([]);
+
+  // 미리보기: null | 3 | 2 | 1 | 0(게임 시작)
+  const [previewCountdown, setPreviewCountdown] = useState(null);
+
   const [quizAnswer, setQuizAnswer] = useState('');
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const isCheckingRef = useRef(false);
 
-  // ── 실시간 구독: 어느 stage에 있어도 JobExplained 감지 ──────
+  // ── 실시간 구독: JobExplained 감지 ──────────────────────────
   useEffect(() => {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
@@ -45,60 +45,53 @@ function Round1({ team, sessionCode }) {
     return () => { if (unsubscribe) unsubscribe(); };
   }, [sessionCode, stage]);
 
-  // ── 카드 초기화 ──────────────────────────────────────────────
-  const initializeCards = () => {
+  // ── 카드 생성 ────────────────────────────────────────────────
+  const buildCards = () => {
     const newCards = [];
     CARD_PAIRS.forEach((pair, idx) => {
       newCards.push({ ...pair, id: idx * 2,     pairId: idx });
       newCards.push({ ...pair, id: idx * 2 + 1, pairId: idx });
     });
-    newCards.sort(() => Math.random() - 0.5);
+    return newCards.sort(() => Math.random() - 0.5);
+  };
+
+  // ── 미션 시작: 카드 섞기 → stage=mission → 3초 앞면 보이기 → 게임 ──
+  const startMission = () => {
+    const newCards = buildCards();
     setCards(newCards);
     setFlipped([]);
     setMatched([]);
     setRequiredMatched([]);
     isCheckingRef.current = false;
-  };
 
-  // ── 미션 시작 버튼 → 카드 섞기 → 3초 미리보기 ──────────────
-  const startMission = () => {
-    initializeCards();
-    setPreviewPhase(true);
+    // stage를 mission으로 먼저 전환 → 카드 그리드가 렌더링됨
+    setStage('mission');
+    // 카운트다운 3 시작 (null이 아니면 미리보기 모드)
     setPreviewCountdown(3);
-
-    // 3초 카운트다운
-    let count = 3;
-    const interval = setInterval(() => {
-      count -= 1;
-      setPreviewCountdown(count);
-      if (count <= 0) {
-        clearInterval(interval);
-        setPreviewPhase(false);
-        setStage('mission');
-      }
-    }, 1000);
   };
 
-  // missionIntro에서 startMission 호출 시 카드를 미리 준비
+  // ── 카운트다운 타이머 ────────────────────────────────────────
   useEffect(() => {
-    if (stage === 'missionIntro') {
-      // 카드 미리 생성 (화면에는 미표시)
-      const newCards = [];
-      CARD_PAIRS.forEach((pair, idx) => {
-        newCards.push({ ...pair, id: idx * 2,     pairId: idx });
-        newCards.push({ ...pair, id: idx * 2 + 1, pairId: idx });
-      });
-      newCards.sort(() => Math.random() - 0.5);
-      setCards(newCards);
+    if (previewCountdown === null) return;
+    if (previewCountdown === 0) {
+      // 미리보기 끝 → 게임 시작
+      setPreviewCountdown(null);
+      return;
     }
-  }, [stage]);
+    const timer = setTimeout(() => {
+      setPreviewCountdown(prev => prev - 1);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [previewCountdown]);
 
-  // ── 카드 클릭 ──────────────────────────────────────────────
+  // 미리보기 중인지 여부
+  const isPreviewing = previewCountdown !== null;
+
+  // ── 카드 클릭 ────────────────────────────────────────────────
   const handleCardClick = (cardId) => {
-    if (previewPhase) return;
+    if (isPreviewing) return;
     if (isCheckingRef.current) return;
     if (flipped.includes(cardId)) return;
-
     const card = cards.find(c => c.id === cardId);
     if (matched.includes(card.icon)) return;
     if (flipped.length >= 2) return;
@@ -108,21 +101,30 @@ function Round1({ team, sessionCode }) {
 
     if (newFlipped.length === 2) {
       isCheckingRef.current = true;
-      setTimeout(() => checkMatch(newFlipped), 900);
+      setTimeout(() => {
+        const [c1, c2] = newFlipped.map(id => cards.find(c => c.id === id));
+        if (c1.pairId === c2.pairId) {
+          setMatched(prev => [...prev, c1.icon]);
+          if (c1.required) setRequiredMatched(prev => [...prev, c1.icon]);
+        }
+        setFlipped([]);
+        isCheckingRef.current = false;
+      }, 900);
     }
   };
 
-  const checkMatch = (flippedIds) => {
-    const [c1, c2] = flippedIds.map(id => cards.find(c => c.id === id));
-    if (c1.pairId === c2.pairId) {
-      setMatched(prev => [...prev, c1.icon]);
-      if (c1.required) setRequiredMatched(prev => [...prev, c1.icon]);
-    }
+  // ── 다시 시작 ────────────────────────────────────────────────
+  const resetMission = () => {
+    const newCards = buildCards();
+    setCards(newCards);
     setFlipped([]);
+    setMatched([]);
+    setRequiredMatched([]);
     isCheckingRef.current = false;
+    setPreviewCountdown(3);
   };
 
-  // ── 퀴즈 제출 ──────────────────────────────────────────────
+  // ── 퀴즈 제출 ────────────────────────────────────────────────
   const submitQuiz = async () => {
     setQuizSubmitted(true);
     if (quizAnswer === '1') {
@@ -133,20 +135,16 @@ function Round1({ team, sessionCode }) {
     }
   };
 
-  const ScoreBox = () => (
-    <div style={{ textAlign: 'center', flexShrink: 0 }}>
-      <p className="text-small">팀 점수</p>
-      <div style={{ fontSize: '2rem', fontWeight: 700, color: '#fbbf24' }}>{team.totalScore || 0}</div>
-    </div>
-  );
-
   const RoundHeader = () => (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
       <div>
         <span className="round-badge">ROUND 1</span>
         <h2>🪐 새로운 행성 발견</h2>
       </div>
-      <ScoreBox />
+      <div style={{ textAlign: 'center', flexShrink: 0 }}>
+        <p className="text-small">팀 점수</p>
+        <div style={{ fontSize: '2rem', fontWeight: 700, color: '#fbbf24' }}>{team.totalScore || 0}</div>
+      </div>
     </div>
   );
 
@@ -208,23 +206,20 @@ function Round1({ team, sessionCode }) {
   }
 
   // ════════════════════════════════════════
-  // STAGE: missionIntro  ← 새로 추가
+  // STAGE: missionIntro
   // ════════════════════════════════════════
   if (stage === 'missionIntro') {
     return (
       <div className="card card-medium round-transition">
         <RoundHeader />
-
-        {/* 미션 설명 */}
         <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🎯</div>
           <h3>미션: 생명체 흔적 카드 찾기</h3>
         </div>
-
-        <div className="story-box" style={{ lineHeight: 2 }}>
+        <div className="story-box" style={{ lineHeight: 2.2 }}>
           <p>🃏 카드를 뒤집어 같은 카드 2장을 맞추는 게임입니다</p>
           <p>⭐ <strong>아래 4가지 필수 카드</strong>를 모두 찾아야 미션 성공!</p>
-          <p>💡 시작하면 카드를 3초 동안 미리 볼 수 있어요</p>
+          <p>👀 시작하면 카드 앞면이 <strong>3초 동안</strong> 보입니다. 잘 기억하세요!</p>
         </div>
 
         {/* 찾아야 할 카드 크게 표시 */}
@@ -234,10 +229,8 @@ function Round1({ team, sessionCode }) {
             {REQUIRED_CARDS.map(card => (
               <div key={card.icon} style={{
                 background: 'linear-gradient(135deg,rgba(167,139,250,0.2),rgba(139,92,246,0.2))',
-                border: '2px solid #a78bfa',
-                borderRadius: '12px',
-                padding: '1rem 0.5rem',
-                textAlign: 'center',
+                border: '2px solid #a78bfa', borderRadius: '12px',
+                padding: '1rem 0.5rem', textAlign: 'center',
               }}>
                 <div style={{ fontSize: '2.5rem' }}>{card.icon}</div>
                 <div style={{ fontWeight: 700, marginTop: '0.4rem', fontSize: '0.95rem' }}>{card.name}</div>
@@ -246,17 +239,9 @@ function Round1({ team, sessionCode }) {
           </div>
         </div>
 
-        {/* 미리보기 중 카운트다운 표시 */}
-        {previewPhase ? (
-          <div className="alert alert-warning mt-2" style={{ textAlign: 'center', fontSize: '1.3rem', fontWeight: 700 }}>
-            <div style={{ fontSize: '3rem' }}>{previewCountdown}</div>
-            카드를 기억하세요!
-          </div>
-        ) : (
-          <button className="btn btn-primary mt-2" style={{ fontSize: '1.1rem', padding: '1rem' }} onClick={startMission}>
-            🚀 미션 시작하기
-          </button>
-        )}
+        <button className="btn btn-primary mt-2" style={{ fontSize: '1.1rem', padding: '1rem' }} onClick={startMission}>
+          🚀 미션 시작하기
+        </button>
       </div>
     );
   }
@@ -268,24 +253,21 @@ function Round1({ team, sessionCode }) {
     const allRequiredMatched = requiredMatched.length === 4;
 
     return (
-      <div className="card card-medium round-transition">
+      <div className="card card-medium round-transition" style={{ position: 'relative' }}>
         <RoundHeader />
 
-        {/* 찾아야 할 카드 상태 표시 (중간 크기) */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+        {/* 찾아야 할 카드 상태 */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '0.5rem', marginBottom: '0.75rem' }}>
           {REQUIRED_CARDS.map(card => {
             const done = requiredMatched.includes(card.icon);
             return (
               <div key={card.icon} style={{
                 background: done ? 'rgba(52,211,153,0.2)' : 'rgba(255,255,255,0.05)',
                 border: `2px solid ${done ? '#34d399' : 'rgba(255,255,255,0.2)'}`,
-                borderRadius: '10px',
-                padding: '0.6rem 0.25rem',
-                textAlign: 'center',
-                transition: 'all 0.3s',
+                borderRadius: '10px', padding: '0.6rem 0.25rem', textAlign: 'center', transition: 'all 0.3s',
               }}>
                 <div style={{ fontSize: '1.8rem' }}>{card.icon}</div>
-                <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '0.25rem', opacity: done ? 1 : 0.6 }}>
+                <div style={{ fontSize: '0.8rem', fontWeight: 600, marginTop: '0.2rem', opacity: done ? 1 : 0.6 }}>
                   {done ? '✅' : card.name}
                 </div>
               </div>
@@ -294,13 +276,13 @@ function Round1({ team, sessionCode }) {
         </div>
 
         {/* 진행 상황 */}
-        <div className="alert alert-info" style={{ padding: '0.6rem 1rem', marginBottom: '1rem' }}>
-          <p style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+        <div className="alert alert-info" style={{ padding: '0.5rem 1rem', marginBottom: '0.75rem' }}>
+          <p style={{ fontWeight: 600, fontSize: '0.9rem' }}>
             매칭: {matched.length}/8쌍 &nbsp;|&nbsp; 필수: {requiredMatched.length}/4 ⭐
           </p>
         </div>
 
-        {/* 카드 그리드 - 4×4, 정사각형에 가깝게 */}
+        {/* 카드 그리드 */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(4,1fr)',
@@ -309,27 +291,22 @@ function Round1({ team, sessionCode }) {
           margin: '0 auto',
         }}>
           {cards.map(card => {
-            const isFlipped = flipped.includes(card.id);
-            const isMatched = matched.includes(card.icon);
+            // 미리보기 중이면 모든 카드 앞면 노출
+            const isRevealed = isPreviewing || flipped.includes(card.id) || matched.includes(card.icon);
 
             return (
               <div
                 key={card.id}
                 onClick={() => handleCardClick(card.id)}
-                style={{
-                  aspectRatio: '1 / 1',   // 정사각형
-                  cursor: isMatched ? 'default' : 'pointer',
-                  position: 'relative',
-                  perspective: '800px',
-                }}
+                style={{ aspectRatio: '1/1', cursor: isPreviewing || matched.includes(card.icon) ? 'default' : 'pointer', position: 'relative', perspective: '800px' }}
               >
                 <div style={{
                   position: 'absolute', width: '100%', height: '100%',
                   transition: 'transform 0.5s',
                   transformStyle: 'preserve-3d',
-                  transform: (isFlipped || isMatched) ? 'rotateY(180deg)' : 'rotateY(0)',
+                  transform: isRevealed ? 'rotateY(180deg)' : 'rotateY(0)',
                 }}>
-                  {/* 앞면(뒤집기 전) */}
+                  {/* 뒷면 (물음표) */}
                   <div style={{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
@@ -340,23 +317,23 @@ function Round1({ team, sessionCode }) {
                     border: '2px solid rgba(255,255,255,0.3)',
                   }}>❓</div>
 
-                  {/* 뒷면(카드 내용) */}
+                  {/* 앞면 (카드 내용) */}
                   <div style={{
                     position: 'absolute', width: '100%', height: '100%',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
-                    background: isMatched
+                    background: matched.includes(card.icon)
                       ? (card.required ? 'linear-gradient(135deg,#34d399,#059669)' : 'linear-gradient(135deg,#60a5fa,#3b82f6)')
-                      : 'linear-gradient(135deg,#e0e7ff,#c7d2fe)',
+                      : (isPreviewing ? 'linear-gradient(135deg,#fbbf24,#f59e0b)' : 'linear-gradient(135deg,#e0e7ff,#c7d2fe)'),
                     borderRadius: 'clamp(8px,2vw,12px)',
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                    border: isMatched
+                    border: matched.includes(card.icon)
                       ? (card.required ? '2px solid #34d399' : '2px solid #60a5fa')
-                      : '2px solid rgba(0,0,0,0.1)',
+                      : (isPreviewing ? '2px solid #fbbf24' : '2px solid rgba(0,0,0,0.1)'),
                   }}>
                     <div style={{ fontSize: 'clamp(1.6rem,5vw,2.4rem)' }}>{card.icon}</div>
-                    <div style={{ fontSize: 'clamp(0.6rem,1.5vw,0.8rem)', fontWeight: 700, marginTop: '0.2rem', color: isMatched ? 'white' : '#1e1b4b' }}>
-                      {isMatched ? (card.required ? '✓' : '○') : card.name}
+                    <div style={{ fontSize: 'clamp(0.6rem,1.5vw,0.8rem)', fontWeight: 700, marginTop: '0.2rem', color: matched.includes(card.icon) ? 'white' : (isPreviewing ? 'white' : '#1e1b4b') }}>
+                      {matched.includes(card.icon) ? (card.required ? '✓' : '○') : card.name}
                     </div>
                   </div>
                 </div>
@@ -364,6 +341,27 @@ function Round1({ team, sessionCode }) {
             );
           })}
         </div>
+
+        {/* 미리보기 카운트다운 배너 (카드 위에 반투명하게) */}
+        {isPreviewing && (
+          <div style={{
+            position: 'absolute',
+            bottom: '5rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(0,0,0,0.75)',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            padding: '0.75rem 2rem',
+            textAlign: 'center',
+            pointerEvents: 'none',
+            zIndex: 10,
+            whiteSpace: 'nowrap',
+          }}>
+            <div style={{ fontSize: '2.5rem', fontWeight: 900, color: '#fbbf24', lineHeight: 1 }}>{previewCountdown}</div>
+            <div style={{ fontSize: '1rem', fontWeight: 600, marginTop: '0.25rem' }}>카드를 기억하세요!</div>
+          </div>
+        )}
 
         {allRequiredMatched && (
           <div className="alert alert-success mt-2">
@@ -374,16 +372,9 @@ function Round1({ team, sessionCode }) {
 
         <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
           {!allRequiredMatched && (
-            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => {
-              initializeCards();
-              setPreviewPhase(true);
-              setPreviewCountdown(3);
-              let c = 3;
-              const iv = setInterval(() => {
-                c -= 1; setPreviewCountdown(c);
-                if (c <= 0) { clearInterval(iv); setPreviewPhase(false); }
-              }, 1000);
-            }}>🔄 다시 시작</button>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={resetMission} disabled={isPreviewing}>
+              🔄 다시 시작
+            </button>
           )}
           {allRequiredMatched && (
             <button className="btn btn-primary" style={{ flex: 1 }} onClick={() => setStage('quiz')}>
@@ -391,19 +382,6 @@ function Round1({ team, sessionCode }) {
             </button>
           )}
         </div>
-
-        {/* 3초 미리보기 오버레이 (재시작 시) */}
-        {previewPhase && (
-          <div style={{
-            position: 'fixed', inset: 0, zIndex: 999,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexDirection: 'column', color: 'white',
-          }}>
-            <div style={{ fontSize: '5rem', fontWeight: 900 }}>{previewCountdown}</div>
-            <p style={{ fontSize: '1.5rem', fontWeight: 600 }}>카드를 기억하세요!</p>
-          </div>
-        )}
       </div>
     );
   }
@@ -418,7 +396,6 @@ function Round1({ team, sessionCode }) {
       '행성의 색깔이 파란색일 것',
       '위성(달)이 있을 것',
     ];
-
     return (
       <div className="card card-medium round-transition">
         <RoundHeader />
@@ -444,7 +421,9 @@ function Round1({ team, sessionCode }) {
           })}
         </div>
         {!quizSubmitted ? (
-          <button className="btn btn-primary mt-2" onClick={submitQuiz} disabled={!quizAnswer}>답안 제출하기</button>
+          <button className="btn btn-primary mt-2" onClick={submitQuiz} disabled={!quizAnswer}>
+            답안 제출하기
+          </button>
         ) : (
           <div className={`alert ${quizAnswer === '1' ? 'alert-success' : 'alert-error'} mt-2 text-center`}>
             <div style={{ fontSize: '3rem' }}>{quizAnswer === '1' ? '🎉' : '😢'}</div>
