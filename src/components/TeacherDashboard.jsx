@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { getSession, saveSession, getTeams, subscribeToSession } from '../utils/storage';
+import { getSession, saveSession, subscribeToSession } from '../utils/storage';
 
 function TeacherDashboard() {
   const { sessionCode, currentRound, setCurrentRound, teams, setTeams, setCurrentScreen } = useGame();
