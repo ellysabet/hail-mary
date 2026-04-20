@@ -12,89 +12,116 @@ function StudentCode() {
   const [newTeamName, setNewTeamName] = useState('');
   const [showCreateTeam, setShowCreateTeam] = useState(false);
 
-  const checkSessionCode = () => {
+  const checkSessionCode = async () => {
     const code = codeInput.toUpperCase().trim();
     if (!code) {
       alert('❌ 세션 코드를 입력해주세요!');
       return;
     }
 
-    const session = getSession(code);
-    if (!session) {
-      alert('❌ 존재하지 않는 세션 코드입니다!');
-      return;
-    }
+    try {
+      const session = await getSession(code);
+      if (!session) {
+        alert('❌ 존재하지 않는 세션 코드입니다!');
+        return;
+      }
 
-    setSessionCode(code);
-    setStep('name');
+      setSessionCode(code);
+      setStep('name');
+    } catch (error) {
+      console.error('Error checking session:', error);
+      alert('❌ 세션 확인 중 오류가 발생했습니다.');
+    }
   };
 
-  const submitName = () => {
+  const submitName = async () => {
     if (!studentName.trim()) {
       alert('❌ 이름을 입력해주세요!');
       return;
     }
     
-    // 팀 목록 로드
-    const existingTeams = getTeams(codeInput.toUpperCase().trim());
-    setTeams(existingTeams);
-    setStep('team');
+    try {
+      // 팀 목록 로드
+      const existingTeams = await getTeams(codeInput.toUpperCase().trim());
+      setTeams(existingTeams || []);
+      setStep('team');
+    } catch (error) {
+      console.error('Error loading teams:', error);
+      setTeams([]);
+      setStep('team');
+    }
   };
 
-  const createNewTeam = () => {
+  const createNewTeam = async () => {
     if (!newTeamName.trim()) {
       alert('❌ 팀 이름을 입력해주세요!');
       return;
     }
 
     const code = codeInput.toUpperCase().trim();
-    const existingTeams = getTeams(code);
     
-    // 중복 체크
-    if (existingTeams.find(t => t.name === newTeamName.trim())) {
-      alert('❌ 이미 존재하는 팀 이름입니다!');
-      return;
+    try {
+      const existingTeams = await getTeams(code);
+      
+      // 중복 체크
+      if (existingTeams && existingTeams.find(t => t.name === newTeamName.trim())) {
+        alert('❌ 이미 존재하는 팀 이름입니다!');
+        return;
+      }
+
+      // 새 팀 생성
+      const newTeam = {
+        id: `team_${Date.now()}`,
+        name: newTeamName.trim(),
+        members: [studentName.trim()],
+        totalScore: 0,
+        round1Score: 0,
+        round2Score: 0,
+        round3Score: 0,
+        round4Score: 0,
+        round5Score: 0,
+        round6Score: 0
+      };
+
+      const updatedTeams = [...(existingTeams || []), newTeam];
+      await saveTeams(code, updatedTeams);
+      
+      // 팀 선택
+      selectTeam(newTeam);
+    } catch (error) {
+      console.error('Error creating team:', error);
+      alert('❌ 팀 생성 중 오류가 발생했습니다.');
     }
-
-    // 새 팀 생성
-    const newTeam = {
-      id: Date.now(),
-      name: newTeamName.trim(),
-      members: [studentName.trim()],
-      totalScore: 0,
-      rounds: {}
-    };
-
-    const updatedTeams = [...existingTeams, newTeam];
-    saveTeams(code, updatedTeams);
-    
-    // 팀 선택
-    selectTeam(newTeam);
   };
 
-  const selectTeam = (team) => {
+  const selectTeam = async (team) => {
     const code = codeInput.toUpperCase().trim();
     
-    // 팀원 추가
-    const existingTeams = getTeams(code);
-    const targetTeam = existingTeams.find(t => t.id === team.id);
-    
-    if (targetTeam && !targetTeam.members.includes(studentName.trim())) {
-      targetTeam.members.push(studentName.trim());
-      saveTeams(code, existingTeams);
+    try {
+      // 팀원 추가
+      const existingTeams = await getTeams(code);
+      const targetTeam = existingTeams.find(t => t.id === team.id);
+      
+      if (targetTeam && !targetTeam.members.includes(studentName.trim())) {
+        targetTeam.members.push(studentName.trim());
+        await saveTeams(code, existingTeams);
+      }
+
+      // 학생 데이터 저장
+      const data = {
+        sessionCode: code,
+        studentName: studentName.trim(),
+        teamId: team.id,
+        teamName: team.name,
+        joinTime: Date.now()
+      };
+
+      setStudentData(data);
+      setCurrentScreen('student-game');
+    } catch (error) {
+      console.error('Error selecting team:', error);
+      alert('❌ 팀 선택 중 오류가 발생했습니다.');
     }
-
-    // 학생 데이터 저장
-    const data = {
-      sessionCode: code,
-      studentName: studentName.trim(),
-      teamId: team.id,
-      teamName: team.name,
-      joinTime: Date.now()
-    };
-
-    setStudentData(data);
-    setCurrentScreen('student-game');
   };
 
   // Step 1: 세션 코드 입력
@@ -225,9 +252,9 @@ function StudentCode() {
                   <div style={{ fontSize: '2.5rem' }}>👥</div>
                   <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>{team.name}</div>
                   <div className="text-small" style={{ opacity: 0.7 }}>
-                    {team.members.length}명 참여 중
+                    {team.members?.length || 0}명 참여 중
                   </div>
-                  {team.members.length > 0 && (
+                  {team.members && team.members.length > 0 && (
                     <div className="text-small" style={{ 
                       fontSize: '0.8rem', 
                       opacity: 0.6,
