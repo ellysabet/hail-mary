@@ -1,5 +1,5 @@
 import { ref, set, get, remove, onValue } from 'firebase/database';
-import { database } from '../firebase';
+import { database } from '../firebase.js';
 
 // 세션 생성
 export function createSession(code, teacherName) {
