@@ -82,20 +82,20 @@ function TeacherDashboard() {
     alert('✅ 퀴즈가 시작되었습니다!');
   };
 
-  const pauseRound = () => {
-    setCurrentRound(0);
-    const session = getSession(sessionCode);
-    session.currentRound = 0;
-    saveSession(sessionCode, session);
-    document.body.className = '';
-  };
+const pauseRound = async () => {
+  setCurrentRound(0);
+  const session = await getSession(sessionCode);
+  session.currentRound = 0;
+  await saveSession(sessionCode, session);
+  document.body.className = '';
+};
 
-  const showFinalResults = () => {
-    setShowResults(true);
-    pauseRound();
-  };
+const showFinalResults = () => {
+  setShowResults(true);
+  pauseRound();
+};
 
-  const allScores = teams.map(t => t.totalScore || 0);
+const allScores = teams ? teams.map(t => t.totalScore || 0) : [];
 
   return (
     <div className="container">
