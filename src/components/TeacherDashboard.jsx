@@ -1,102 +1,130 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { getSession, saveSession, getTeams, getBadge, getRank } from '../utils/storage';
+import { getSession, saveSession, getTeams, subscribeToSession } from '../utils/storage';
 
 function TeacherDashboard() {
   const { sessionCode, currentRound, setCurrentRound, teams, setTeams, setCurrentScreen } = useGame();
   const [showResults, setShowResults] = useState(false);
-  const [selectedPoster, setSelectedPoster] = useState(null); // 선택된 포스터
+  const [selectedPoster, setSelectedPoster] = useState(null);
 
-  // 실시간 팀 데이터 업데이트
+  // Firebase 실시간 구독
   useEffect(() => {
-    const interval = setInterval(() => {
-      const updatedTeams = getTeams(sessionCode);
-      setTeams(updatedTeams);
-    }, 2000);
+    if (!sessionCode) return;
 
-    return () => clearInterval(interval);
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
+      if (session) {
+        setTeams(session.teams || []);
+        setCurrentRound(session.currentRound || 0);
+      }
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [sessionCode]);
 
-  const startRound = (round) => {
+  useEffect(() => {
+    document.body.className = currentRound > 0 ? `round-${currentRound}-bg` : '';
+    return () => {
+      document.body.className = '';
+    };
+  }, [currentRound]);
+
+  const startRound = async (round) => {
     setCurrentRound(round);
     setShowResults(false);
     
-    // 세션 업데이트
-    const session = getSession(sessionCode);
-    session.currentRound = round;
-    
-    // Round별 직업 설명 상태 초기화
-    if (round === 1) {
-      session.round1JobExplained = false;
-    } else if (round === 2) {
-      session.round2JobExplained = false;
-      session.round2MissionCompleted = false;
-    } else if (round === 3) {
-      session.round3JobExplained = false;
-    } else if (round === 4) {
-      session.round4JobExplained = false;
-    } else if (round === 5) {
-      session.round5JobExplained = false;
-      session.round5VideoWatched = false;
-    } else if (round === 6) {
-      session.round6JobExplained = false;
-      session.round6Posters = [];
+    try {
+      const session = await getSession(sessionCode);
+      session.currentRound = round;
+      
+      if (round === 1) {
+        session.round1JobExplained = false;
+      } else if (round === 2) {
+        session.round2JobExplained = false;
+        session.round2MissionCompleted = false;
+      } else if (round === 3) {
+        session.round3JobExplained = false;
+      } else if (round === 4) {
+        session.round4JobExplained = false;
+      } else if (round === 5) {
+        session.round5JobExplained = false;
+        session.round5VideoWatched = false;
+      } else if (round === 6) {
+        session.round6JobExplained = false;
+        session.round6Posters = [];
+      }
+      
+      await saveSession(sessionCode, session);
+      document.body.className = `round-${round}-bg`;
+    } catch (error) {
+      console.error('Error starting round:', error);
     }
-    
-    saveSession(sessionCode, session);
-    
-    // body 클래스 업데이트
-    document.body.className = `round-${round}-bg`;
   };
 
-  const completeJobExplanation = () => {
-    const session = getSession(sessionCode);
-    if (currentRound === 1) {
-      session.round1JobExplained = true;
-    } else if (currentRound === 2) {
-      session.round2JobExplained = true;
-    } else if (currentRound === 3) {
-      session.round3JobExplained = true;
-    } else if (currentRound === 4) {
-      session.round4JobExplained = true;
-    } else if (currentRound === 5) {
-      session.round5JobExplained = true;
-    } else if (currentRound === 6) {
-      session.round6JobExplained = true;
+  const completeJobExplanation = async () => {
+    try {
+      const session = await getSession(sessionCode);
+      if (currentRound === 1) {
+        session.round1JobExplained = true;
+      } else if (currentRound === 2) {
+        session.round2JobExplained = true;
+      } else if (currentRound === 3) {
+        session.round3JobExplained = true;
+      } else if (currentRound === 4) {
+        session.round4JobExplained = true;
+      } else if (currentRound === 5) {
+        session.round5JobExplained = true;
+      } else if (currentRound === 6) {
+        session.round6JobExplained = true;
+      }
+      await saveSession(sessionCode, session);
+      alert('✅ 미션이 시작되었습니다!');
+    } catch (error) {
+      console.error('Error completing job explanation:', error);
     }
-    saveSession(sessionCode, session);
-    alert('✅ 미션이 시작되었습니다!');
   };
 
-  const completeVideoWatching = () => {
-    const session = getSession(sessionCode);
-    session.round5VideoWatched = true;
-    saveSession(sessionCode, session);
-    alert('✅ 퀴즈가 시작되었습니다!');
+  const completeVideoWatching = async () => {
+    try {
+      const session = await getSession(sessionCode);
+      session.round5VideoWatched = true;
+      await saveSession(sessionCode, session);
+      alert('✅ 퀴즈가 시작되었습니다!');
+    } catch (error) {
+      console.error('Error completing video:', error);
+    }
   };
 
-  const completeMission = () => {
-    const session = getSession(sessionCode);
-    session.round2MissionCompleted = true;
-    saveSession(sessionCode, session);
-    alert('✅ 퀴즈가 시작되었습니다!');
+  const completeMission = async () => {
+    try {
+      const session = await getSession(sessionCode);
+      session.round2MissionCompleted = true;
+      await saveSession(sessionCode, session);
+      alert('✅ 퀴즈가 시작되었습니다!');
+    } catch (error) {
+      console.error('Error completing mission:', error);
+    }
   };
 
-const pauseRound = async () => {
-  setCurrentRound(0);
-  const session = await getSession(sessionCode);
-  session.currentRound = 0;
-  await saveSession(sessionCode, session);
-  document.body.className = '';
-};
+  const pauseRound = async () => {
+    setCurrentRound(0);
+    try {
+      const session = await getSession(sessionCode);
+      session.currentRound = 0;
+      await saveSession(sessionCode, session);
+      document.body.className = '';
+    } catch (error) {
+      console.error('Error pausing round:', error);
+    }
+  };
 
-const showFinalResults = () => {
-  setShowResults(true);
-  pauseRound();
-};
+  const showFinalResults = () => {
+    setShowResults(true);
+    pauseRound();
+  };
 
-const allScores = teams ? teams.map(t => t.totalScore || 0) : [];
-
+  const allScores = teams ? teams.map(t => t.totalScore || 0) : [];
   return (
     <div className="container">
       {/* 헤더 */}
