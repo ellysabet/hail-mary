@@ -30,12 +30,28 @@ function TeacherDashboard() {
     };
   }, [currentRound]);
 
+  // 순위 계산 함수 (로컬)
+  const getRankLocal = (score) => {
+    const sortedScores = teams.map(t => t.totalScore || 0).sort((a, b) => b - a);
+    return sortedScores.indexOf(score) + 1;
+  };
+
+  // 배지 계산 함수 (로컬)
+  const getBadgeLocal = (rank) => {
+    if (rank === 1) return { emoji: '🥇', color: '#FFD700', name: '1등' };
+    if (rank === 2) return { emoji: '🥈', color: '#C0C0C0', name: '2등' };
+    if (rank === 3) return { emoji: '🥉', color: '#CD7F32', name: '3등' };
+    return { emoji: '🏅', color: '#94a3b8', name: `${rank}등` };
+  };
+
   const startRound = async (round) => {
     setCurrentRound(round);
     setShowResults(false);
     
     try {
       const session = await getSession(sessionCode);
+      if (!session) return;
+      
       session.currentRound = round;
       
       if (round === 1) {
@@ -65,6 +81,8 @@ function TeacherDashboard() {
   const completeJobExplanation = async () => {
     try {
       const session = await getSession(sessionCode);
+      if (!session) return;
+      
       if (currentRound === 1) {
         session.round1JobExplained = true;
       } else if (currentRound === 2) {
@@ -88,6 +106,8 @@ function TeacherDashboard() {
   const completeVideoWatching = async () => {
     try {
       const session = await getSession(sessionCode);
+      if (!session) return;
+      
       session.round5VideoWatched = true;
       await saveSession(sessionCode, session);
       alert('✅ 퀴즈가 시작되었습니다!');
@@ -99,6 +119,8 @@ function TeacherDashboard() {
   const completeMission = async () => {
     try {
       const session = await getSession(sessionCode);
+      if (!session) return;
+      
       session.round2MissionCompleted = true;
       await saveSession(sessionCode, session);
       alert('✅ 퀴즈가 시작되었습니다!');
@@ -111,6 +133,8 @@ function TeacherDashboard() {
     setCurrentRound(0);
     try {
       const session = await getSession(sessionCode);
+      if (!session) return;
+      
       session.currentRound = 0;
       await saveSession(sessionCode, session);
       document.body.className = '';
@@ -125,520 +149,281 @@ function TeacherDashboard() {
   };
 
   const allScores = teams ? teams.map(t => t.totalScore || 0) : [];
-  return (
-    <div className="container">
-      {/* 헤더 */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2>👨‍🏫 교사 관제 시스템</h2>
-            <p className="text-small">세션 코드를 학생들에게 공유하세요</p>
-          </div>
-          <div style={{ textAlign: 'center' }}>
-            <p className="text-small">학생 입장 코드</p>
-            <div style={{ 
-              fontSize: '2.5rem', 
-              fontWeight: 700, 
-              color: '#fbbf24',
-              background: 'rgba(251, 191, 36, 0.2)',
-              padding: '0.5rem 1rem',
-              borderRadius: '12px',
-              border: '3px solid #fbbf24'
-            }}>
-              {sessionCode}
-            </div>
-          </div>
-        </div>
-      </div>
+  const maxScore = Math.max(...allScores, 0);
 
-      {/* 라운드 제어 */}
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <h3>🎮 라운드 제어</h3>
-        
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginTop: '1rem' }}>
-          {[1, 2, 3, 4, 5, 6].map(round => (
-            <button
-              key={round}
-              onClick={() => startRound(round)}
-              className={`btn ${currentRound === round ? 'btn-primary' : 'btn-secondary'}`}
-              style={{
-                fontSize: '1.1rem',
-                padding: '1rem',
-                position: 'relative'
-              }}
-            >
-              Round {round}
-              {currentRound === round && (
-                <span style={{ 
-                  position: 'absolute', 
-                  top: '5px', 
-                  right: '5px',
-                  fontSize: '1.5rem'
-                }}>
-                  ✓
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+  if (showResults) {
+    const sortedTeams = [...teams].sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
+    
+    return (
+      <div className="container">
+        <div className="card card-large text-center">
+          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🏆</div>
+          <h1>최종 결과</h1>
+          <p className="subtitle">모든 라운드가 종료되었습니다!</p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
-          <button 
-            onClick={pauseRound}
-            className="btn btn-secondary"
-            disabled={currentRound === 0}
-          >
-            ⏸️ 현재 라운드 일시정지
-          </button>
-          <button 
-            onClick={showFinalResults}
-            className="btn btn-primary"
-            style={{ background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' }}
-          >
-            🏆 최종 결과 발표
-          </button>
-        </div>
-
-        {/* Round 1 직업 설명 완료 버튼 */}
-        {currentRound === 1 && (
-          <button 
-            onClick={completeJobExplanation}
-            className="btn btn-primary mt-2"
-            style={{ 
-              width: '100%',
-              background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-              fontSize: '1.1rem',
-              padding: '1rem'
-            }}
-          >
-            👨‍🏫 직업 설명 완료 → 미션 시작
-          </button>
-        )}
-
-        {/* Round 2 버튼들 */}
-        {currentRound === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-            <button 
-              onClick={completeJobExplanation}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%',
-                background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-                fontSize: '1.1rem',
-                padding: '1rem'
-              }}
-            >
-              👨‍🏫 직업 설명 완료 → 미션 시작
-            </button>
-            <button 
-              onClick={completeMission}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                fontSize: '1.1rem',
-                padding: '1rem'
-              }}
-            >
-              🚀 오프라인 미션 완료 → 퀴즈 시작
-            </button>
-          </div>
-        )}
-
-        {/* Round 3 버튼 */}
-        {currentRound === 3 && (
-          <button 
-            onClick={completeJobExplanation}
-            className="btn btn-primary mt-2"
-            style={{ 
-              width: '100%',
-              background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-              fontSize: '1.1rem',
-              padding: '1rem'
-            }}
-          >
-            👨‍🏫 직업 설명 완료 → 미션 시작
-          </button>
-        )}
-
-        {/* Round 4 버튼 */}
-        {currentRound === 4 && (
-          <button 
-            onClick={completeJobExplanation}
-            className="btn btn-primary mt-2"
-            style={{ 
-              width: '100%',
-              background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-              fontSize: '1.1rem',
-              padding: '1rem'
-            }}
-          >
-            👨‍🏫 직업 설명 완료 → 미션 시작
-          </button>
-        )}
-
-        {/* Round 5 버튼들 */}
-        {currentRound === 5 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '1rem' }}>
-            <button 
-              onClick={completeJobExplanation}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%',
-                background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-                fontSize: '1.1rem',
-                padding: '1rem'
-              }}
-            >
-              👨‍🏫 직업 설명 완료 → 미션 시작
-            </button>
-            <button 
-              onClick={completeVideoWatching}
-              className="btn btn-primary"
-              style={{ 
-                width: '100%',
-                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                fontSize: '1.1rem',
-                padding: '1rem'
-              }}
-            >
-              📹 영상 시청 완료 → 퀴즈 시작
-            </button>
-          </div>
-        )}
-
-        {/* Round 6 버튼 */}
-        {currentRound === 6 && (
-          <button 
-            onClick={completeJobExplanation}
-            className="btn btn-primary mt-2"
-            style={{ 
-              width: '100%',
-              background: 'linear-gradient(135deg, #34d399 0%, #059669 100%)',
-              fontSize: '1.1rem',
-              padding: '1rem'
-            }}
-          >
-            👨‍🏫 직업 설명 완료 → 포스터 제작 시작
-          </button>
-        )}
-
-        {currentRound > 0 && (
-          <div className="alert alert-success mt-2">
-            ✅ 현재 <strong>Round {currentRound}</strong> 진행 중
-          </div>
-        )}
-      </div>
-
-      {/* Round 6 포스터 갤러리 */}
-      {currentRound === 6 && (() => {
-        const session = getSession(sessionCode);
-        const posters = session?.round6Posters || [];
-        
-        if (posters.length > 0) {
-          return (
-            <div className="card" style={{ marginBottom: '1rem' }}>
-              <h3>🎨 팀별 포스터 갤러리 ({posters.length}팀 제출)</h3>
-              
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                gap: '1rem',
-                marginTop: '1rem'
-              }}>
-                {posters.map((poster, idx) => (
-                  <div
-                    key={poster.teamId}
-                    onClick={() => setSelectedPoster(poster)}
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.2) 100%)',
-                      border: '2px solid #10b981',
-                      borderRadius: '12px',
-                      padding: '1.5rem',
-                      textAlign: 'center',
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-                    onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                  >
-                    <div style={{ 
-                      fontSize: '0.9rem', 
-                      fontWeight: 600, 
-                      marginBottom: '0.5rem',
-                      opacity: 0.8
-                    }}>
-                      {poster.teamName}
-                    </div>
-                    {poster.image ? (
-                      <img 
-                        src={poster.image} 
-                        alt={poster.title} 
-                        style={{ 
-                          maxWidth: '100%', 
-                          height: '150px',
-                          objectFit: 'contain',
-                          borderRadius: '8px',
-                          marginBottom: '0.5rem'
-                        }} 
-                      />
-                    ) : (
-                      <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>
-                        {poster.icon}
-                      </div>
-                    )}
-                    <h4 style={{ fontSize: '1.3rem', marginBottom: '1rem', fontWeight: 700 }}>
-                      {poster.title}
-                    </h4>
-                    <p style={{ fontSize: '0.95rem', lineHeight: '1.6', marginBottom: '1rem' }}>
-                      {poster.idea.length > 80 ? poster.idea.substring(0, 80) + '...' : poster.idea}
-                    </p>
-                    <p style={{ 
-                      fontSize: '1rem', 
-                      fontWeight: 600, 
-                      fontStyle: 'italic',
-                      opacity: 0.9
-                    }}>
-                      "{poster.slogan}"
-                    </p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="alert alert-info mt-2">
-                <p style={{ fontSize: '0.95rem' }}>
-                  💡 포스터를 클릭하여 크게 보고, 발표를 유도하세요!
-                </p>
-              </div>
-            </div>
-          );
-        }
-        return null;
-      })()}
-
-      {/* 팀 점수 현황 */}
-      <div className="card">
-        <h3>📊 참여 팀 현황 ({teams.length}팀)</h3>
-        
-        <div style={{ marginTop: '1rem' }}>
-          {teams
-            .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
-            .map((team, idx) => {
-              const rank = getRank(team.totalScore || 0, allScores);
-              const badge = getBadge(team.totalScore || 0, rank);
+          {/* 시상대 */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+            gap: '1rem',
+            margin: '3rem 0',
+            minHeight: '250px'
+          }}>
+            {sortedTeams.slice(0, 3).map((team, idx) => {
+              const rank = idx + 1;
+              const badge = getBadgeLocal(rank);
+              const heights = ['200px', '250px', '180px'];
+              const order = [1, 0, 2]; // 2등, 1등, 3등 순서
               
               return (
-                <div 
+                <div
                   key={team.id}
-                  className="card"
                   style={{
-                    marginBottom: '0.5rem',
-                    background: idx < 3 
-                      ? `linear-gradient(135deg, ${badge.color}22 0%, ${badge.color}11 100%)`
-                      : 'rgba(255,255,255,0.05)',
-                    border: idx < 3 ? `2px solid ${badge.color}` : '1px solid rgba(255,255,255,0.1)'
+                    order: order[idx],
+                    width: '150px',
+                    height: heights[idx],
+                    background: `linear-gradient(135deg, ${badge.color}44 0%, ${badge.color}22 100%)`,
+                    border: `3px solid ${badge.color}`,
+                    borderRadius: '12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    padding: '1.5rem 1rem',
+                    position: 'relative'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ fontSize: '2rem' }}>{badge.icon}</div>
-                      <div>
-                        <h4 style={{ margin: 0 }}>{team.name}</h4>
-                        {team.members && team.members.length > 0 && (
-                          <p className="text-small" style={{ margin: 0, opacity: 0.7 }}>
-                            {team.members.join(', ')}
-                          </p>
-                        )}
-                        {showResults && (
-                          <p className="text-small" style={{ margin: 0, color: badge.color }}>
-                            {badge.name}
-                          </p>
-                        )}
-                      </div>
+                  <div style={{ fontSize: '3rem' }}>{badge.emoji}</div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.5rem' }}>
+                      {team.name}
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '2rem', fontWeight: 700, color: badge.color }}>
-                        {team.totalScore || 0}
-                      </div>
-                      <p className="text-small" style={{ margin: 0 }}>점</p>
+                    <div style={{ fontSize: '2rem', fontWeight: 700, color: badge.color }}>
+                      {team.totalScore || 0}점
                     </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+
+          {/* 전체 순위 */}
+          <div className="card mt-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+            <h3>📊 전체 순위</h3>
+            <div style={{ marginTop: '1rem' }}>
+              {sortedTeams.map((team, idx) => {
+                const rank = idx + 1;
+                const badge = getBadgeLocal(rank);
+                
+                return (
+                  <div
+                    key={team.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '1rem',
+                      marginBottom: '0.5rem',
+                      background: rank <= 3 ? `linear-gradient(90deg, ${badge.color}22 0%, transparent 100%)` : 'rgba(255,255,255,0.02)',
+                      borderLeft: rank <= 3 ? `4px solid ${badge.color}` : '2px solid rgba(255,255,255,0.1)',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ fontSize: '2rem' }}>{badge.emoji}</div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '1.1rem' }}>{team.name}</div>
+                        <div className="text-small" style={{ opacity: 0.7 }}>
+                          {team.members?.join(', ') || ''}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
+                      {team.totalScore || 0}점
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary mt-3"
+            onClick={() => setShowResults(false)}
+          >
+            대시보드로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container">
+      {/* 헤더 */}
+      <div className="card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2>🎮 교사 관제 페이지</h2>
+            <p className="subtitle">세션 코드: <strong style={{ fontSize: '1.5rem', color: '#a78bfa' }}>{sessionCode}</strong></p>
+          </div>
+          <button
+            className="btn btn-secondary"
+            onClick={() => {
+              if (window.confirm('정말 종료하시겠습니까?')) {
+                setCurrentScreen('home');
+              }
+            }}
+          >
+            종료
+          </button>
         </div>
       </div>
 
-      {/* 포스터 확대 모달 */}
-      {selectedPoster && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '2rem'
-          }}
-          onClick={() => setSelectedPoster(null)}
-        >
-          <div 
-            className="card" 
-            style={{ 
-              maxWidth: '800px', 
-              width: '100%',
-              background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(5, 150, 105, 0.3) 100%)',
-              border: '3px solid #10b981'
-            }}
-            onClick={(e) => e.stopPropagation()}
+      {/* 라운드 제어 */}
+      <div className="card mt-2">
+        <h3>🎯 라운드 제어</h3>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+          gap: '1rem',
+          marginTop: '1rem'
+        }}>
+          {[1, 2, 3, 4, 5, 6].map((round) => (
+            <button
+              key={round}
+              onClick={() => startRound(round)}
+              className={currentRound === round ? 'btn btn-primary' : 'btn btn-secondary'}
+              style={{
+                fontSize: '1.1rem',
+                fontWeight: currentRound === round ? 700 : 400
+              }}
+            >
+              Round {round}
+            </button>
+          ))}
+          <button
+            onClick={pauseRound}
+            className="btn btn-secondary"
+            style={{ gridColumn: 'span 2' }}
           >
-            <div style={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              marginBottom: '2rem'
-            }}>
-              <h2 style={{ margin: 0 }}>{selectedPoster.teamName}의 포스터</h2>
+            ⏸️ 일시정지
+          </button>
+        </div>
+
+        {currentRound > 0 && (
+          <div className="mt-2">
+            <button
+              onClick={completeJobExplanation}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              ✅ 직업 설명 완료 (미션 시작)
+            </button>
+
+            {currentRound === 2 && (
               <button
-                onClick={() => setSelectedPoster(null)}
-                style={{
-                  background: 'rgba(239, 68, 68, 0.3)',
-                  border: '2px solid #ef4444',
-                  borderRadius: '50%',
-                  width: '40px',
-                  height: '40px',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: 'white',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
+                onClick={completeMission}
+                className="btn btn-primary mt-1"
+                style={{ width: '100%' }}
               >
-                ✕
+                ✅ 미션 완료 (퀴즈 시작)
               </button>
-            </div>
-            
-            <div style={{ textAlign: 'center', padding: '2rem' }}>
-              {selectedPoster.image ? (
-                <img 
-                  src={selectedPoster.image} 
-                  alt={selectedPoster.title} 
-                  style={{ 
-                    maxWidth: '100%', 
-                    maxHeight: '400px',
-                    objectFit: 'contain',
-                    borderRadius: '8px',
-                    marginBottom: '1.5rem'
-                  }} 
-                />
-              ) : (
-                <div style={{ fontSize: '8rem', marginBottom: '1.5rem' }}>
-                  {selectedPoster.icon}
-                </div>
-              )}
-              <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: 700 }}>
-                {selectedPoster.title}
-              </h1>
-              <p style={{ 
-                fontSize: '1.3rem', 
-                lineHeight: '2', 
-                marginBottom: '2rem',
-                padding: '1.5rem',
-                background: 'rgba(0,0,0,0.2)',
-                borderRadius: '12px'
-              }}>
-                {selectedPoster.idea}
-              </p>
-              <p style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: 700, 
-                fontStyle: 'italic'
-              }}>
-                "{selectedPoster.slogan}"
-              </p>
-            </div>
+            )}
 
-            <p className="text-center text-small mt-2" style={{ opacity: 0.7 }}>
-              화면을 클릭하거나 ✕ 버튼을 눌러 닫기
-            </p>
+            {currentRound === 5 && (
+              <button
+                onClick={completeVideoWatching}
+                className="btn btn-primary mt-1"
+                style={{ width: '100%' }}
+              >
+                ✅ 영상 시청 완료 (퀴즈 시작)
+              </button>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 최종 결과 화면 */}
-      {showResults && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.9)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000
-          }}
-          onClick={() => setShowResults(false)}
-        >
-          <div className="card" style={{ maxWidth: '600px', margin: '2rem' }}>
-            <h1 style={{ textAlign: 'center', fontSize: '3rem' }}>🎉</h1>
-            <h2 style={{ textAlign: 'center' }}>최종 순위</h2>
-            
-            <div style={{ marginTop: '2rem' }}>
-              {teams
-                .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
-                .slice(0, 3)
-                .map((team, idx) => {
-                  const rank = idx + 1;
-                  const badge = getBadge(team.totalScore || 0, rank);
-                  
-                  return (
-                    <div 
-                      key={team.id}
-                      style={{
-                        textAlign: 'center',
-                        padding: '1.5rem',
-                        marginBottom: '1rem',
-                        background: `linear-gradient(135deg, ${badge.color}33 0%, ${badge.color}11 100%)`,
-                        borderRadius: '12px',
-                        border: `3px solid ${badge.color}`
-                      }}
-                    >
-                      <div style={{ fontSize: '3rem' }}>{badge.icon}</div>
-                      <h3 style={{ margin: '0.5rem 0', fontSize: '1.8rem' }}>{team.name}</h3>
-                      <p style={{ fontSize: '2.5rem', fontWeight: 700, color: badge.color, margin: '0.5rem 0' }}>
-                        {team.totalScore || 0}점
-                      </p>
-                      <p style={{ color: badge.color, fontWeight: 600 }}>{badge.name}</p>
+      {/* 팀 현황 */}
+      <div className="card mt-2">
+        <h3>📊 참가 팀 ({teams.length}팀)</h3>
+        
+        <div style={{ marginTop: '1rem' }}>
+          {teams.length === 0 ? (
+            <div className="alert alert-info">
+              <p>아직 참가한 팀이 없습니다</p>
+              <p className="text-small mt-1">학생들이 세션 코드로 입장하여 팀을 만들 수 있습니다</p>
+            </div>
+          ) : (
+            teams
+              .sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0))
+              .map((team, idx) => {
+                const rank = idx + 1;
+                const badge = getBadgeLocal(rank);
+                
+                return (
+                  <div
+                    key={team.id}
+                    className="card"
+                    style={{
+                      marginBottom: '0.5rem',
+                      background: rank <= 3
+                        ? `linear-gradient(135deg, ${badge.color}22 0%, ${badge.color}11 100%)`
+                        : 'rgba(255,255,255,0.05)',
+                      border: rank <= 3 ? `2px solid ${badge.color}` : '1px solid rgba(255,255,255,0.1)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ fontSize: '2rem' }}>{badge.emoji}</div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>{team.name}</div>
+                          <div className="text-small" style={{ opacity: 0.7 }}>
+                            {team.members?.join(', ') || '팀원 없음'}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '2rem', fontWeight: 700 }}>
+                          {team.totalScore || 0}점
+                        </div>
+                        <div className="text-small" style={{ opacity: 0.7 }}>
+                          {rank}등
+                        </div>
+                      </div>
                     </div>
-                  );
-                })}
-            </div>
 
-            <p className="text-center text-small mt-2">화면을 클릭하면 닫힙니다</p>
-          </div>
+                    {/* 라운드별 점수 */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(6, 1fr)',
+                      gap: '0.5rem',
+                      marginTop: '1rem',
+                      paddingTop: '1rem',
+                      borderTop: '1px solid rgba(255,255,255,0.1)'
+                    }}>
+                      {[1, 2, 3, 4, 5, 6].map((r) => (
+                        <div key={r} style={{ textAlign: 'center' }}>
+                          <div className="text-small" style={{ opacity: 0.7 }}>R{r}</div>
+                          <div style={{ fontWeight: 600 }}>{team[`round${r}Score`] || 0}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+          )}
         </div>
-      )}
+      </div>
 
-      {/* 하단 버튼 */}
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-        <button 
-          className="btn btn-secondary"
-          onClick={() => {
-            if (window.confirm('정말 수업을 종료하시겠습니까?')) {
-              setCurrentScreen('home');
-            }
-          }}
+      {/* 최종 결과 보기 버튼 */}
+      <div className="card mt-2">
+        <button
+          onClick={showFinalResults}
+          className="btn btn-primary"
+          style={{ width: '100%', padding: '1.5rem', fontSize: '1.2rem' }}
         >
-          🏠 수업 종료하기
+          🏆 최종 결과 보기
         </button>
       </div>
     </div>
