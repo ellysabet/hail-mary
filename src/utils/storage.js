@@ -198,3 +198,23 @@ export function getAllSessions() {
       return [];
     });
 }
+export const updateMemberScore = async (sessionCode, teamId, studentName, score) => {
+  try {
+    const session = await getSession(sessionCode);
+    if (!session || !session.teams) return;
+
+    const teamIndex = session.teams.findIndex(t => t.id === teamId);
+    if (teamIndex === -1) return;
+
+    if (!session.teams[teamIndex].memberScores) {
+      session.teams[teamIndex].memberScores = {};
+    }
+
+    const current = session.teams[teamIndex].memberScores[studentName] || 0;
+    session.teams[teamIndex].memberScores[studentName] = current + score;
+
+    await saveSession(sessionCode, session);
+  } catch (error) {
+    console.error('Error updating member score:', error);
+  }
+};
