@@ -1,6 +1,16 @@
 import { ref, set, get, remove, onValue } from 'firebase/database';
 import { database } from '../firebase.js';
 
+// 세션 코드 생성
+export function generateSessionCode() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return code;
+}
+
 // 세션 생성
 export function createSession(code, teacherName) {
   const sessionRef = ref(database, `sessions/${code}`);
@@ -88,6 +98,22 @@ export function addTeam(sessionCode, teamName) {
   });
 }
 
+// 팀 목록 가져오기
+export function getTeams(sessionCode) {
+  return getSession(sessionCode).then((session) => {
+    return session ? session.teams : [];
+  });
+}
+
+// 팀 저장
+export function saveTeams(sessionCode, teams) {
+  return getSession(sessionCode).then((session) => {
+    if (!session) return;
+    session.teams = teams;
+    return saveSession(sessionCode, session);
+  });
+}
+
 // 팀 점수 업데이트
 export function updateTeamScore(sessionCode, teamId, points) {
   return getSession(sessionCode).then((session) => {
@@ -115,6 +141,24 @@ export function updateRound(sessionCode, roundNumber) {
 
     session.currentRound = roundNumber;
     return saveSession(sessionCode, session);
+  });
+}
+
+// 배지 가져오기
+export function getBadge(sessionCode, teamId) {
+  return getSession(sessionCode).then((session) => {
+    if (!session) return null;
+    const team = session.teams.find((t) => t.id === teamId);
+    return team ? team.badge : null;
+  });
+}
+
+// 순위 가져오기
+export function getRank(sessionCode, teamId) {
+  return getSession(sessionCode).then((session) => {
+    if (!session) return 0;
+    const sortedTeams = [...session.teams].sort((a, b) => b.totalScore - a.totalScore);
+    return sortedTeams.findIndex((t) => t.id === teamId) + 1;
   });
 }
 
@@ -153,38 +197,4 @@ export function getAllSessions() {
       console.error('Error getting all sessions:', error);
       return [];
     });
-}
-// 세션 코드 생성
-export function generateSessionCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
-}
-
-// 팀 목록 가져오기
-export function getTeams(sessionCode) {
-  return getSession(sessionCode).then((session) => {
-    return session ? session.teams : [];
-  });
-}
-
-// 배지 가져오기
-export function getBadge(sessionCode, teamId) {
-  return getSession(sessionCode).then((session) => {
-    if (!session) return null;
-    const team = session.teams.find((t) => t.id === teamId);
-    return team ? team.badge : null;
-  });
-}
-
-// 순위 가져오기
-export function getRank(sessionCode, teamId) {
-  return getSession(sessionCode).then((session) => {
-    if (!session) return 0;
-    const sortedTeams = [...session.teams].sort((a, b) => b.totalScore - a.totalScore);
-    return sortedTeams.findIndex((t) => t.id === teamId) + 1;
-  });
 }
