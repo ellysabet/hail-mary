@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { getSession, getTeams } from '../utils/storage';
+import { getSession, getTeams, subscribeToSession } from '../utils/storage';
 import Round1 from './rounds/Round1';
 import Round2 from './rounds/Round2';
 import Round3 from './rounds/Round3';
@@ -13,12 +13,13 @@ function StudentGame() {
   const [currentRound, setCurrentRound] = useState(0);
   const [team, setTeam] = useState(null);
 
-  // 자동 새로고침 (2초마다)
+  // Firebase 실시간 구독
   useEffect(() => {
-    const updateData = () => {
-      const session = getSession(sessionCode);
+    if (!sessionCode) return;
+
+    const unsubscribe = subscribeToSession(sessionCode, async (session) => {
       if (session) {
-        setCurrentRound(session.currentRound);
+        setCurrentRound(session.currentRound || 0);
         
         // body 클래스 업데이트
         if (session.currentRound > 0) {
@@ -26,19 +27,20 @@ function StudentGame() {
         } else {
           document.body.className = '';
         }
-      }
 
-      const teams = getTeams(sessionCode);
-      const myTeam = teams.find(t => t.id === studentData.teamId);
-      if (myTeam) {
-        setTeam(myTeam);
+        // 팀 데이터 업데이트
+        if (session.teams && studentData?.teamId) {
+          const myTeam = session.teams.find(t => t.id === studentData.teamId);
+          if (myTeam) {
+            setTeam(myTeam);
+          }
+        }
       }
+    });
+
+    return () => {
+      if (unsubscribe) unsubscribe();
     };
-
-    updateData();
-    const interval = setInterval(updateData, 2000);
-
-    return () => clearInterval(interval);
   }, [sessionCode, studentData]);
 
   if (!team) {
