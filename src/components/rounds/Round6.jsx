@@ -281,8 +281,11 @@ function Round6({ team, sessionCode }) {
     setPosterSubmitted(true);
     setStage('posterDone');
     await updateTeamScore(sessionCode, team.id, 100);
-    if (team.currentStudentName) {
-      await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+    // 팀원 전체에게 개인 점수 100점 지급
+    if (team.members && team.members.length > 0) {
+      for (const member of team.members) {
+        await updateMemberScore(sessionCode, team.id, member, 100);
+      }
     }
   };
 
