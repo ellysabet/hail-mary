@@ -21,7 +21,11 @@ function Round3({ team, sessionCode }) {
   useEffect(() => {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
-      if (session?.round3JobExplained && (stage === 'job' || stage === 'story')) {
+            // 교사 강제 이동
+      if (session.round3Stage && session.round3Stage !== stage) {
+        setStage(session.round3Stage);
+      }
+if (session?.round3JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission1');
       }
     });
