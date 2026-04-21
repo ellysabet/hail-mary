@@ -17,16 +17,11 @@ function TeacherSetup() {
   };
 
   const startSession = () => {
-    // 세션 코드 생성
     const code = generateSessionCode();
-    
-    // 세션 저장
     saveSession(code, {
       currentRound: 0,
       startTime: Date.now()
     });
-
-    // Context 업데이트
     setSessionCode(code);
     setCurrentScreen('teacher-dashboard');
   };
@@ -38,7 +33,6 @@ function TeacherSetup() {
         <div className="card text-center" style={{ maxWidth: '500px', margin: '2rem auto' }}>
           <h2>👨‍🏫 교사 전용 페이지</h2>
           <p style={{ marginTop: '1rem' }}>교사 암호를 입력하세요</p>
-          
           <input
             type="password"
             value={password}
@@ -55,20 +49,12 @@ function TeacherSetup() {
               borderRadius: '8px',
               color: 'white',
               fontSize: '1.2rem',
-              textAlign: 'center'
+              textAlign: 'center',
+              display: 'block',
             }}
           />
-          
-          <button className="btn btn-primary mt-2" onClick={handlePasswordCheck}>
-            확인
-          </button>
-          
-          <button 
-            className="btn btn-secondary mt-2" 
-            onClick={() => setCurrentScreen('home')}
-          >
-            돌아가기
-          </button>
+          <button className="btn btn-primary mt-2" onClick={handlePasswordCheck}>확인</button>
+          <button className="btn btn-secondary mt-2" onClick={() => setCurrentScreen('home')}>돌아가기</button>
         </div>
       </div>
     );
@@ -79,7 +65,6 @@ function TeacherSetup() {
     <div className="container">
       <div className="card" style={{ maxWidth: '600px', margin: '2rem auto', textAlign: 'center' }}>
         <div style={{ fontSize: '6rem', marginBottom: '1rem' }}>🎮</div>
-        
         <h2>수업 시작하기</h2>
         <p className="subtitle">세션을 시작하면 학생들이 입장할 수 있습니다</p>
 
@@ -92,17 +77,19 @@ function TeacherSetup() {
           </ul>
         </div>
 
+        {/* ✅ 두 버튼 동일 비율: flex + flex:1 + width:auto */}
         <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
-          <button 
+          <button
             className="btn btn-secondary"
+            style={{ flex: 1, width: 'auto' }}
             onClick={() => setCurrentScreen('home')}
           >
             ← 돌아가기
           </button>
-          <button 
+          <button
             className="btn btn-primary"
+            style={{ flex: 1, width: 'auto' }}
             onClick={startSession}
-            style={{ flex: 1 }}
           >
             세션 시작하기 →
           </button>
