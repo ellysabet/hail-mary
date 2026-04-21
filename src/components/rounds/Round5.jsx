@@ -16,6 +16,11 @@ export default function Round5({ team, sessionCode }) {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
       if (!session) return;
+      // 교사 강제 이동
+      if (session.round5Stage && session.round5Stage !== stage) {
+        setStage(session.round5Stage);
+      }
+
       if (session.round5JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission');
       }
