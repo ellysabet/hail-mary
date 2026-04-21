@@ -218,3 +218,21 @@ export const updateMemberScore = async (sessionCode, teamId, studentName, score)
     console.error('Error updating member score:', error);
   }
 };
+// ✅ storage.js에 추가할 함수
+
+/**
+ * 세션 완전 삭제 (수업 종료 시)
+ * @param {string} sessionCode - 삭제할 세션 코드
+ */
+export const deleteSession = async (sessionCode) => {
+  try {
+    // Firebase Realtime Database 경로: sessions/{sessionCode}
+    const { ref, remove } = await import('firebase/database');
+    const { db } = await import('./firebase');
+    const sessionRef = ref(db, `sessions/${sessionCode}`);
+    await remove(sessionRef);
+  } catch (error) {
+    console.error('Error deleting session:', error);
+  }
+};
+
