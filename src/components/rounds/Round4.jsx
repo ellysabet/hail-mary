@@ -86,7 +86,11 @@ function Round4({ team, sessionCode }) {
   useEffect(() => {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
-      if (session?.round4JobExplained && (stage === 'job' || stage === 'story')) {
+            // 교사 강제 이동
+      if (session.round4Stage && session.round4Stage !== stage) {
+        setStage(session.round4Stage);
+      }
+if (session?.round4JobExplained && (stage === 'job' || stage === 'story')) {
         initializeGame();
         setStage('mission');
       }
