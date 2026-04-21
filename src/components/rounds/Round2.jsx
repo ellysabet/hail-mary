@@ -11,6 +11,11 @@ function Round2({ team, sessionCode }) {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
       if (!session) return;
+      // 교사 강제 이동
+      if (session.round2Stage && session.round2Stage !== stage) {
+        setStage(session.round2Stage);
+      }
+
       if (session.round2JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission');
       }
