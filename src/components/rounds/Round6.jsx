@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { updateTeamScore, getSession, saveSession } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, saveSession, updateMemberScore } from '../../utils/storage';
 
 function Round6({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
-  const [jobExplained, setJobExplained] = useState(false);
   
   // 포스터 제작 상태
   const [posterTitle, setPosterTitle] = useState('');
@@ -27,25 +26,16 @@ function Round6({ team, sessionCode }) {
   const [quizAnswer, setQuizAnswer] = useState('');
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // Job 설명 완료 체크
+  // ── 실시간 구독: JobExplained 감지 ──
   useEffect(() => {
-    if (stage === 'job') {
-      const interval = setInterval(() => {
-        const session = getSession(sessionCode);
-        if (session?.round6JobExplained) {
-          setJobExplained(true);
-        }
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [stage, sessionCode]);
-
-  // Job 완료시 Mission으로
-  useEffect(() => {
-    if (jobExplained && stage === 'job') {
-      setStage('mission');
-    }
-  }, [jobExplained, stage]);
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
+      if (session?.round6JobExplained && (stage === 'job' || stage === 'story')) {
+        setStage('mission');
+      }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [sessionCode, stage]);
 
   const availableIcons = ['🛰️', '♻️', '🌍', '🚀', '🗑️', '🌱', '⚡', '🌟'];
   const drawingColors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#000000'];
@@ -247,7 +237,7 @@ function Round6({ team, sessionCode }) {
     }
   ];
 
-  const submitPoster = () => {
+  const submitPoster = async () => {
     if (!posterTitle.trim() || !posterIdea.trim() || !posterSlogan.trim()) {
       alert('모든 항목을 입력해주세요!');
       return;
@@ -258,7 +248,8 @@ function Round6({ team, sessionCode }) {
       return;
     }
 
-    const session = getSession(sessionCode);
+    const { getSession } = await import('../../utils/storage');
+    const session = await getSession(sessionCode);
     if (!session.round6Posters) {
       session.round6Posters = [];
     }
@@ -277,15 +268,21 @@ function Round6({ team, sessionCode }) {
     session.round6Posters = session.round6Posters.filter(p => p.teamId !== team.id);
     session.round6Posters.push(posterData);
     
-    saveSession(sessionCode, session);
+    await saveSession(sessionCode, session);
     setPosterSubmitted(true);
-    updateTeamScore(sessionCode, team.id, 100);
+    await updateTeamScore(sessionCode, team.id, 100);
+    if (team.currentStudentName) {
+      await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+    }
   };
 
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     setQuizSubmitted(true);
     if (quizAnswer === '2') {
-      updateTeamScore(sessionCode, team.id, 100);
+      await updateTeamScore(sessionCode, team.id, 100);
+      if (team.currentStudentName) {
+        await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+      }
     }
   };
 
@@ -407,8 +404,7 @@ function Round6({ team, sessionCode }) {
           <p className="text-small">선생님의 직업 설명을 듣고 있어주세요!</p>
         </div>
 
-        {!jobExplained && (
-          <div className="alert alert-warning mt-2" style={{ 
+        <div className="alert alert-warning mt-2" style={{ 
             background: 'rgba(251, 191, 36, 0.2)', 
             border: '2px solid rgba(251, 191, 36, 0.5)',
             textAlign: 'center'
@@ -418,7 +414,6 @@ function Round6({ team, sessionCode }) {
               선생님이 직업 설명을 완료하면 자동으로 미션이 시작됩니다
             </p>
           </div>
-        )}
       </div>
     );
   }
