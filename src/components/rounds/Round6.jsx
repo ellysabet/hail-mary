@@ -26,12 +26,16 @@ function Round6({ team, sessionCode }) {
   const [quizAnswer, setQuizAnswer] = useState('');
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // ── 실시간 구독: JobExplained 감지 ──
+  // ── 실시간 구독: JobExplained / QuizStarted 감지 ──
   useEffect(() => {
     if (!sessionCode) return;
     const unsubscribe = subscribeToSession(sessionCode, (session) => {
-      if (session?.round6JobExplained && (stage === 'job' || stage === 'story')) {
+      if (!session) return;
+      if (session.round6JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission');
+      }
+      if (session.round6QuizStarted && stage === 'posterDone') {
+        setStage('quiz');
       }
     });
     return () => { if (unsubscribe) unsubscribe(); };
@@ -270,6 +274,7 @@ function Round6({ team, sessionCode }) {
     
     await saveSession(sessionCode, session);
     setPosterSubmitted(true);
+    setStage('posterDone');
     await updateTeamScore(sessionCode, team.id, 100);
     if (team.currentStudentName) {
       await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
@@ -1035,15 +1040,50 @@ function Round6({ team, sessionCode }) {
               </p>
             </div>
 
-            <button 
-              className="btn btn-primary mt-2"
-              onClick={() => setStage('quiz')}
-              style={{ width: '100%' }}
-            >
-              퀴즈로 이동 →
-            </button>
+            <div className="alert alert-info mt-2" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
+              <p style={{ fontWeight: 600 }}>선생님이 포스터 감상을 완료하면<br/>퀴즈가 자동으로 시작됩니다</p>
+            </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  // posterDone 단계 - 포스터 제출 완료 후 선생님 퀴즈 시작 대기
+  if (stage === 'posterDone') {
+    return (
+      <div className="card card-medium round-transition">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <div>
+            <span className="round-badge" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>ROUND 6</span>
+            <h2>🌍 지속가능한 우주</h2>
+          </div>
+          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+            <p className="text-small">팀 점수</p>
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#fbbf24' }}>{team.totalScore || 0}</div>
+          </div>
+        </div>
+
+        <div className="alert alert-success" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🎉</div>
+          <p style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>포스터 제출 완료!</p>
+          <p style={{ fontSize: '1rem' }}>100점 획득! 선생님과 함께 다른 팀의 포스터를 감상해보세요.</p>
+        </div>
+
+        <div style={{
+          background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(5,150,105,0.15))',
+          border: '2px solid rgba(16,185,129,0.4)',
+          borderRadius: '12px', padding: '1.5rem', textAlign: 'center', marginBottom: '1.5rem'
+        }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.75rem' }}>🖼️</div>
+          <p style={{ fontWeight: 600, opacity: 0.9 }}>교사 화면에서 각 팀의 포스터를 클릭하면 크게 볼 수 있어요</p>
+        </div>
+
+        <div className="alert alert-warning" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏳</div>
+          <p style={{ fontWeight: 600 }}>선생님이 포스터 감상을 완료하면<br/>퀴즈가 자동으로 시작됩니다</p>
+        </div>
       </div>
     );
   }
