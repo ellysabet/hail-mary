@@ -280,19 +280,14 @@ function Round6({ team, sessionCode }) {
     await saveSession(sessionCode, session);
     setPosterSubmitted(true);
     setStage('posterDone');
-    await updateTeamScore(sessionCode, team.id, 100);
-    // 팀원 전체에게 개인 점수 100점 지급
-    if (team.members && team.members.length > 0) {
-      for (const member of team.members) {
-        await updateMemberScore(sessionCode, team.id, member, 100);
-      }
-    }
+    // 포스터 제출 자체에는 점수 없음 → 퀴즈 정답 시에만 점수 부여
   };
 
   const submitQuiz = async () => {
     setQuizSubmitted(true);
     if (quizAnswer === '2') {
       await updateTeamScore(sessionCode, team.id, 100);
+      // 퀴즈 정답 시 본인에게만 개인 점수 부여
       if (team.currentStudentName) {
         await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
       }
