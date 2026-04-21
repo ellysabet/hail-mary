@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { updateTeamScore, getSession } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
 function Round4({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
-  const [jobExplained, setJobExplained] = useState(false);
   
   // 미션 상태
   const [robotPos, setRobotPos] = useState({ x: 0, y: 0 });
@@ -83,26 +82,17 @@ function Round4({ team, sessionCode }) {
     }
   ];
 
-  // Job 설명 완료 체크
+  // ── 실시간 구독: JobExplained 감지 ──
   useEffect(() => {
-    if (stage === 'job') {
-      const interval = setInterval(() => {
-        const session = getSession(sessionCode);
-        if (session?.round4JobExplained) {
-          setJobExplained(true);
-        }
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [stage, sessionCode]);
-
-  // Job 완료시 Mission으로
-  useEffect(() => {
-    if (jobExplained && stage === 'job') {
-      initializeGame();
-      setStage('mission');
-    }
-  }, [jobExplained, stage]);
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
+      if (session?.round4JobExplained && (stage === 'job' || stage === 'story')) {
+        initializeGame();
+        setStage('mission');
+      }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [sessionCode, stage]);
 
   // 게임 초기화
   const initializeGame = () => {
@@ -189,10 +179,13 @@ function Round4({ team, sessionCode }) {
     }
   };
 
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     setQuizSubmitted(true);
     if (quizAnswer === '1') {
-      updateTeamScore(sessionCode, team.id, 100);
+      await updateTeamScore(sessionCode, team.id, 100);
+      if (team.currentStudentName) {
+        await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+      }
     }
   };
 
@@ -270,8 +263,7 @@ function Round4({ team, sessionCode }) {
           <p className="text-small">선생님의 직업 설명을 듣고 있어주세요!</p>
         </div>
 
-        {!jobExplained && (
-          <div className="alert alert-warning mt-2" style={{ 
+        <div className="alert alert-warning mt-2" style={{ 
             background: 'rgba(16, 185, 129, 0.2)', 
             border: '2px solid rgba(16, 185, 129, 0.5)',
             textAlign: 'center'
@@ -281,7 +273,6 @@ function Round4({ team, sessionCode }) {
               선생님이 직업 설명을 완료하면 자동으로 미션이 시작됩니다
             </p>
           </div>
-        )}
       </div>
     );
   }
