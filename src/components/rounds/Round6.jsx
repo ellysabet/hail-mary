@@ -39,7 +39,7 @@ function Round6({ team, sessionCode }) {
       if (session.round6JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission');
       }
-      if (session.round6QuizStarted && stage === 'posterDone') {
+      if (session.round6QuizStarted && (stage === 'posterDone' || stage === 'mission')) {
         setStage('quiz');
       }
     });
@@ -1001,7 +1001,7 @@ function Round6({ team, sessionCode }) {
                 포스터 제출 완료!
               </p>
               <p style={{ fontSize: '1rem' }}>
-                100점 획득! 다른 팀의 발표를 들어보세요.
+                포스터가 제출되었습니다. 다른 팀의 발표를 들어보세요.
               </p>
             </div>
 
@@ -1071,7 +1071,7 @@ function Round6({ team, sessionCode }) {
         <div className="alert alert-success" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
           <div style={{ fontSize: '4rem', marginBottom: '0.5rem' }}>🎉</div>
           <p style={{ fontSize: '1.3rem', fontWeight: 700, marginBottom: '0.5rem' }}>포스터 제출 완료!</p>
-          <p style={{ fontSize: '1rem' }}>100점 획득! 선생님과 함께 다른 팀의 포스터를 감상해보세요.</p>
+          <p style={{ fontSize: '1rem' }}>선생님과 함께 다른 팀의 포스터를 감상해보세요.</p>
         </div>
 
         <div style={{
