@@ -550,22 +550,14 @@ export default function Round5({ team, sessionCode }) {
               ))}
             </div>
 
-            <button 
-              onClick={goToNextStage}
-              style={{
-                width: '100%',
-                padding: '1rem',
-                fontSize: '1.2rem',
-                background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-                color: 'white',
-                border: 'none',
-                borderRadius: '12px',
-                cursor: 'pointer',
-                fontWeight: 600
-              }}
-            >
-              미션 시작 →
-            </button>
+            <div className="alert alert-info" style={{ textAlign: 'center', marginTop: '1rem' }}>
+              <p style={{ fontWeight: 600 }}>👨‍🏫 교사 설명 시간</p>
+              <p className="text-small">선생님의 직업 설명을 듣고 있어주세요!</p>
+            </div>
+            <div className="alert alert-warning mt-2" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '0.25rem' }}>⏳</div>
+              <p style={{ fontWeight: 600 }}>선생님이 완료 버튼을 누르면 자동으로 미션이 시작됩니다</p>
+            </div>
           </div>
         )}
 
