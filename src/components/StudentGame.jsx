@@ -262,7 +262,7 @@ function EndingSequence({ onComplete }) {
 
   const scene=ENDING_SCENES[sceneIdx];
   const BgComp=SCENE_BG[sceneIdx]||BgFinalSpace;
-  const typed=useTypewriter(scene.text,28,fade);
+  const typed=useTypewriter(scene.text,56,fade);
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:9999,background:scene.bg,
