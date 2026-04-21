@@ -213,23 +213,14 @@ function BgFinalSpace() {
 const SCENE_BG = [BgPlanet,BgRocket,BgSolar,BgRobot,BgEarth,BgEco,BgCelebrate,BgFinalSpace];
 
 const ENDING_SCENES = [
-  {round:'Round 1',text:'새로운 행성을 발견하고
-생명체의 흔적을 찾아냈습니다.',bg:'#0a0e27',accent:'#818cf8'},
-  {round:'Round 2',text:'직접 설계한 로켓으로
-타우 세티 e를 향해 발사했습니다.',bg:'#1a0008',accent:'#f87171'},
-  {round:'Round 3',text:'우주 태양전지판을 펼쳐
-탐사에 필요한 에너지를 확보했습니다.',bg:'#1c1000',accent:'#fbbf24'},
-  {round:'Round 4',text:'탐사 로봇을 조종해
-행성 곳곳의 데이터를 수집했습니다.',bg:'#001810',accent:'#34d399'},
-  {round:'Round 5',text:'정확한 궤도를 계산해
-지구로 안전하게 귀환했습니다.',bg:'#000d20',accent:'#60a5fa'},
-  {round:'Round 6',text:'지속가능한 우주를 위한
-아이디어 포스터를 완성했습니다.',bg:'#001a0e',accent:'#6ee7b7'},
-  {round:null,text:'6번의 임무를 모두 완수한
-여러분을 진심으로 축하합니다!',bg:'#120a00',accent:'#fbbf24',big:true},
-  {round:null,text:'여러분은 앞으로
-우주산업을 이끌어갈
-빛나는 기대주입니다.',bg:'#0a0018',accent:'#a78bfa',big:true},
+  {round:'Round 1', text:'새로운 행성을 발견하고\n생명체의 흔적을 찾아냈습니다.', bg:'#0a0e27', accent:'#818cf8'},
+  {round:'Round 2', text:'직접 설계한 로켓으로\n타우 세티 e를 향해 발사했습니다.', bg:'#1a0008', accent:'#f87171'},
+  {round:'Round 3', text:'우주 태양전지판을 펼쳐\n탐사에 필요한 에너지를 확보했습니다.', bg:'#1c1000', accent:'#fbbf24'},
+  {round:'Round 4', text:'탐사 로봇을 조종해\n행성 곳곳의 데이터를 수집했습니다.', bg:'#001810', accent:'#34d399'},
+  {round:'Round 5', text:'정확한 궤도를 계산해\n지구로 안전하게 귀환했습니다.', bg:'#000d20', accent:'#60a5fa'},
+  {round:'Round 6', text:'지속가능한 우주를 위한\n아이디어 포스터를 완성했습니다.', bg:'#001a0e', accent:'#6ee7b7'},
+  {round:null, text:'6번의 임무를 모두 완수한\n여러분을 진심으로 축하합니다!', bg:'#120a00', accent:'#fbbf24', big:true},
+  {round:null, text:'여러분은 앞으로\n우주산업을 이끌어갈\n빛나는 기대주입니다.', bg:'#0a0018', accent:'#a78bfa', big:true},
 ];
 
 function useTypewriter(text, speed, active) {
