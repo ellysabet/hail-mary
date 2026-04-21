@@ -28,6 +28,9 @@ function Round3({ team, sessionCode }) {
 if (session?.round3JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission1');
       }
+      if (session.round3QuizReady && stage === 'explanation') {
+        setStage('quiz');
+      }
     });
     return () => { if (unsubscribe) unsubscribe(); };
   }, [sessionCode, stage]);
@@ -647,13 +650,10 @@ if (session?.round3JobExplained && (stage === 'job' || stage === 'story')) {
           </p>
         </div>
 
-        <button 
-          className="btn btn-primary mt-2" 
-          onClick={() => setStage('quiz')}
-          style={{ width: '100%', padding: '1rem', fontSize: '1.1rem' }}
-        >
-          퀴즈 시작하기 →
-        </button>
+        <div className="alert alert-info mt-2" style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>⏳</div>
+          <p style={{ fontWeight: 600 }}>선생님 신호를 기다려주세요 — 곧 퀴즈가 시작됩니다!</p>
+        </div>
       </div>
     );
   }
