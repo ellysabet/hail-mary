@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getSession } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
 export default function Round5({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
@@ -11,26 +11,19 @@ export default function Round5({ team, sessionCode }) {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [launchResult, setLaunchResult] = useState(null); // 발사 결과 상태
 
-  // 세션 상태 확인 (선생님이 단계 변경 시 자동 전환)
+  // ── 실시간 구독: JobExplained / VideoWatched 감지 ──
   useEffect(() => {
-    const checkSession = () => {
-      const session = getSession(sessionCode);
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
       if (!session) return;
-
-      // 직업 설명 완료 → 미션으로 이동
-      if (session.round5JobExplained && stage === 'job') {
+      if (session.round5JobExplained && (stage === 'job' || stage === 'story')) {
         setStage('mission');
       }
-
-      // 영상 시청 완료 → 퀴즈로 이동 (explanation_video 단계에서만)
       if (session.round5VideoWatched && stage === 'explanation_video') {
         setStage('quiz');
       }
-    };
-
-    checkSession();
-    const interval = setInterval(checkSession, 1000);
-    return () => clearInterval(interval);
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
   }, [sessionCode, stage]);
 
   const jobs = [
@@ -156,8 +149,14 @@ export default function Round5({ team, sessionCode }) {
     }
   };
 
-  const handleQuizSubmit = () => {
+  const handleQuizSubmit = async () => {
     setQuizSubmitted(true);
+    if (quizAnswer === correctAnswer) {
+      await updateTeamScore(sessionCode, team.id, 100);
+      if (team.currentStudentName) {
+        await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+      }
+    }
   };
 
   const goToNextStage = () => {
