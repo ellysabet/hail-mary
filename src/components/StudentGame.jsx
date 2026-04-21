@@ -228,12 +228,16 @@ function useTypewriter(text, speed, active) {
   React.useEffect(()=>{
     if (!active){setDisplayed('');return;}
     setDisplayed('');
-    let i=0;
-    const t=setInterval(()=>{
-      if(i<text.length){setDisplayed(text.slice(0,i+1));i++;}
-      else clearInterval(t);
-    },speed);
-    return ()=>clearInterval(t);
+    // 장면 진입 후 0.7초 뒤에 타자 시작
+    const startDelay = setTimeout(() => {
+      let i=0;
+      const t=setInterval(()=>{
+        if(i<text.length){setDisplayed(text.slice(0,i+1));i++;}
+        else clearInterval(t);
+      },speed);
+      return ()=>clearInterval(t);
+    }, 1000);  // 장면 진입 후 1초 뒤 타자 시작
+    return ()=>clearTimeout(startDelay);
   },[text,active]);
   return displayed;
 }
@@ -241,28 +245,39 @@ function useTypewriter(text, speed, active) {
 function EndingSequence({ onComplete }) {
   const [sceneIdx,setSceneIdx]=React.useState(0);
   const [fade,setFade]=React.useState(true);
-  const SCENE_DUR=1750, FADE_DUR=350;
+  // 타이밍 설계:
+  //   0ms       → 장면 페이드인
+  //   700ms     → 타자 시작 (useTypewriter 내부 딜레이)
+  //   700 + 글자수×90ms → 타자 완료
+  //   타자완료 + 1200ms → 페이드아웃 시작
+  //   페이드아웃 600ms → 다음 장면 페이드인
+  const CHAR_SPEED = 75;   // 글자당 ms (타자 속도) - 느리게
+  const TYPE_DELAY = 1000; // 장면 진입 후 타자 시작까지 대기
+  const LINGER    = 2000;  // 타자 완료 후 읽을 시간
+  const FADE_DUR  = 700;   // 페이드 지속 시간
 
   React.useEffect(()=>{
-    const total=ENDING_SCENES.length;
-    const go=()=>{
+    const scene = ENDING_SCENES[sceneIdx];
+    const typeTime = TYPE_DELAY + scene.text.length * CHAR_SPEED;
+    const totalDur = typeTime + LINGER;
+
+    const t = setTimeout(()=>{
       setFade(false);
       setTimeout(()=>{
         setSceneIdx(p=>{
           const n=p+1;
-          if(n>=total){onComplete();return p;}
+          if(n>=ENDING_SCENES.length){onComplete();return p;}
           return n;
         });
         setFade(true);
-      },FADE_DUR);
-    };
-    const t=setTimeout(go,SCENE_DUR);
+      }, FADE_DUR);
+    }, totalDur);
     return ()=>clearTimeout(t);
   },[sceneIdx]);
 
   const scene=ENDING_SCENES[sceneIdx];
   const BgComp=SCENE_BG[sceneIdx]||BgFinalSpace;
-  const typed=useTypewriter(scene.text,56,fade);
+  const typed=useTypewriter(scene.text,CHAR_SPEED,fade);
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:9999,background:scene.bg,
