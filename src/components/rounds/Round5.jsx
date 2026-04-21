@@ -515,37 +515,25 @@ export default function Round5({ team, sessionCode }) {
               👨‍🚀 관련 직업
             </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '2rem' }}>
+            <div className="job-grid">
               {jobs.map((job, idx) => (
                 <div
                   key={idx}
+                  className={job.isCore ? 'job-card job-card-primary' : 'job-card'}
                   style={{
-                    background: job.isCore 
-                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.3) 100%)'
-                      : 'rgba(255,255,255,0.1)',
-                    border: job.isCore ? '2px solid #3b82f6' : '1px solid rgba(255,255,255,0.2)',
-                    borderRadius: '12px',
-                    padding: '1.5rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                    animation: `fadeInUp ${0.6 + idx * 0.1}s ease-out`
+                    background: job.isCore
+                      ? 'linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(37,99,235,0.2) 100%)'
+                      : 'rgba(255,255,255,0.05)',
+                    border: job.isCore ? '3px solid #3b82f6' : undefined,
+                    boxShadow: job.isCore ? '0 0 20px rgba(59,130,246,0.4)' : undefined,
+                    transform: job.isCore ? 'scale(1.05)' : undefined,
                   }}
                 >
-                  <div style={{ fontSize: '3rem' }}>{job.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, fontSize: '1.2rem', marginBottom: '0.3rem' }}>
-                      {job.title}
-                      {job.isCore && <span style={{ 
-                        marginLeft: '0.5rem', 
-                        fontSize: '0.8rem',
-                        background: '#3b82f6',
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '4px'
-                      }}>핵심</span>}
-                    </p>
-                    <p style={{ fontSize: '0.95rem', opacity: 0.9 }}>{job.desc}</p>
-                  </div>
+                  <div style={{ fontSize: '3rem', textAlign: 'center' }}>{job.icon}</div>
+                  <h4 style={{ fontWeight: 700, margin: '0.5rem 0' }}>
+                    {job.title}{job.isCore ? ' ⭐' : ''}
+                  </h4>
+                  <p className="text-small">{job.desc}</p>
                 </div>
               ))}
             </div>
