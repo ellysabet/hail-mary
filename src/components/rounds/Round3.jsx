@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { updateTeamScore, getSession } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
 function Round3({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
-  const [jobExplained, setJobExplained] = useState(false);
   
   // Mission Part 1 상태
   const [experiencedFolds, setExperiencedFolds] = useState([]);
@@ -18,25 +17,16 @@ function Round3({ team, sessionCode }) {
   const [quizAnswer, setQuizAnswer] = useState('');
   const [quizSubmitted, setQuizSubmitted] = useState(false);
 
-  // Job 설명 완료 체크
+  // ── 실시간 구독: JobExplained 감지 ──
   useEffect(() => {
-    if (stage === 'job') {
-      const interval = setInterval(() => {
-        const session = getSession(sessionCode);
-        if (session?.round3JobExplained) {
-          setJobExplained(true);
-        }
-      }, 2000);
-      return () => clearInterval(interval);
-    }
-  }, [stage, sessionCode]);
-
-  // Job 완료시 Mission으로
-  useEffect(() => {
-    if (jobExplained && stage === 'job') {
-      setStage('mission1');
-    }
-  }, [jobExplained, stage]);
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
+      if (session?.round3JobExplained && (stage === 'job' || stage === 'story')) {
+        setStage('mission1');
+      }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [sessionCode, stage]);
 
   // 접기 방식 정보
   const foldTypes = {
@@ -87,10 +77,13 @@ function Round3({ team, sessionCode }) {
     setCurrentFold(foldType);
   };
 
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     setQuizSubmitted(true);
     if (quizAnswer === '0') {
-      updateTeamScore(sessionCode, team.id, 100);
+      await updateTeamScore(sessionCode, team.id, 100);
+      if (team.currentStudentName) {
+        await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+      }
     }
   };
 
@@ -168,8 +161,7 @@ function Round3({ team, sessionCode }) {
           <p className="text-small">선생님의 직업 설명을 듣고 있어주세요!</p>
         </div>
 
-        {!jobExplained && (
-          <div className="alert alert-warning mt-2" style={{ 
+        <div className="alert alert-warning mt-2" style={{ 
             background: 'rgba(251, 191, 36, 0.2)', 
             border: '2px solid rgba(251, 191, 36, 0.5)',
             textAlign: 'center'
@@ -179,7 +171,6 @@ function Round3({ team, sessionCode }) {
               선생님이 직업 설명을 완료하면 자동으로 미션이 시작됩니다
             </p>
           </div>
-        )}
       </div>
     );
   }
