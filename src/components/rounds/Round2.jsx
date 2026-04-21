@@ -1,60 +1,33 @@
 import { useState, useEffect } from 'react';
-import { updateTeamScore, getSession } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
 function Round2({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
   const [quizAnswer, setQuizAnswer] = useState('');
   const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [jobExplained, setJobExplained] = useState(false);
-  const [missionCompleted, setMissionCompleted] = useState(false);
 
-  // Job 설명 완료 상태 체크 (2초마다)
+  // ── 실시간 구독: JobExplained / MissionCompleted 감지 ──
   useEffect(() => {
-    if (stage === 'job') {
-      const interval = setInterval(() => {
-        const session = getSession(sessionCode);
-        if (session?.round2JobExplained) {
-          setJobExplained(true);
-        }
-      }, 2000);
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToSession(sessionCode, (session) => {
+      if (!session) return;
+      if (session.round2JobExplained && (stage === 'job' || stage === 'story')) {
+        setStage('mission');
+      }
+      if (session.round2MissionCompleted && stage === 'mission') {
+        setStage('explanation');
+      }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [sessionCode, stage]);
 
-      return () => clearInterval(interval);
-    }
-  }, [stage, sessionCode]);
-
-  // Job 설명 완료되면 자동으로 Mission으로
-  useEffect(() => {
-    if (jobExplained && stage === 'job') {
-      setStage('mission');
-    }
-  }, [jobExplained, stage]);
-
-  // Mission 완료 상태 체크
-  useEffect(() => {
-    if (stage === 'mission') {
-      const interval = setInterval(() => {
-        const session = getSession(sessionCode);
-        if (session?.round2MissionCompleted) {
-          setMissionCompleted(true);
-        }
-      }, 2000);
-
-      return () => clearInterval(interval);
-    }
-  }, [stage, sessionCode]);
-
-  // Mission 완료되면 자동으로 Explanation으로
-  useEffect(() => {
-    if (missionCompleted && stage === 'mission') {
-      setStage('explanation');
-    }
-  }, [missionCompleted, stage]);
-
-  const submitQuiz = () => {
+  const submitQuiz = async () => {
     setQuizSubmitted(true);
-    
-    if (quizAnswer === '2') { // 정답: 3번 (index 2)
-      updateTeamScore(sessionCode, team.id, 100);
+    if (quizAnswer === '2') {
+      await updateTeamScore(sessionCode, team.id, 100);
+      if (team.currentStudentName) {
+        await updateMemberScore(sessionCode, team.id, team.currentStudentName, 100);
+      }
     }
   };
 
@@ -132,8 +105,7 @@ function Round2({ team, sessionCode }) {
           <p className="text-small">선생님의 직업 설명을 듣고 있어주세요!</p>
         </div>
 
-        {!jobExplained && (
-          <div className="alert alert-warning mt-2" style={{ 
+        <div className="alert alert-warning mt-2" style={{ 
             background: 'rgba(251, 191, 36, 0.2)', 
             border: '2px solid rgba(251, 191, 36, 0.5)',
             textAlign: 'center'
@@ -143,7 +115,6 @@ function Round2({ team, sessionCode }) {
               선생님이 직업 설명을 완료하면 자동으로 미션이 시작됩니다
             </p>
           </div>
-        )}
       </div>
     );
   }
@@ -213,8 +184,7 @@ function Round2({ team, sessionCode }) {
           </div>
         </div>
 
-        {!missionCompleted && (
-          <div className="alert alert-warning mt-2" style={{ 
+        <div className="alert alert-warning mt-2" style={{ 
             background: 'rgba(251, 191, 36, 0.2)', 
             border: '2px solid rgba(251, 191, 36, 0.5)',
             textAlign: 'center'
@@ -224,7 +194,6 @@ function Round2({ team, sessionCode }) {
               두 미션을 모두 완료하고 선생님이 확인하면 퀴즈가 시작됩니다
             </p>
           </div>
-        )}
       </div>
     );
   }
