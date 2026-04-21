@@ -21,10 +21,9 @@ export function GameProvider({ children }) {
         try {
           const session = await getSession(data.sessionCode);
           if (session && !session.closed) {
-            // 유효한 세션 → 복원
-            setStudentData(data);
-            setSessionCode(data.sessionCode);
-            setCurrentScreen('student-game');
+            // 유효한 세션 → 데이터만 복원, 화면은 홈에서 학생이 직접 입장
+            // (자동 복원 제거 - 의도치 않은 자동 입장 방지)
+            localStorage.removeItem('student_data');
           } else {
             // 종료된 세션 → localStorage 정리
             localStorage.removeItem('student_data');
