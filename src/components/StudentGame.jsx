@@ -12,12 +12,20 @@ function StudentGame() {
   const { sessionCode, studentData, setCurrentScreen } = useGame();
   const [currentRound, setCurrentRound] = useState(0);
   const [team, setTeam] = useState(null);
+  const [gameEnded, setGameEnded] = useState(false);
 
   useEffect(() => {
     if (!sessionCode) return;
 
     const unsubscribe = subscribeToSession(sessionCode, async (session) => {
       if (session) {
+        // 게임 종료 감지
+        if (session.gameEnded) {
+          setGameEnded(true);
+          document.body.className = '';
+          return;
+        }
+
         setCurrentRound(session.currentRound || 0);
 
         if (session.currentRound > 0) {
@@ -29,7 +37,6 @@ function StudentGame() {
         if (session.teams && studentData?.teamId) {
           const myTeam = session.teams.find(t => t.id === studentData.teamId);
           if (myTeam) {
-            // ✅ 현재 학생 이름을 team 객체에 포함시켜 라운드 컴포넌트에서 사용 가능하게
             setTeam({ ...myTeam, currentStudentName: studentData.studentName });
           }
         }
@@ -38,6 +45,84 @@ function StudentGame() {
 
     return () => { if (unsubscribe) unsubscribe(); };
   }, [sessionCode, studentData]);
+
+  // ── 게임 종료 축하 화면 ────────────────────────────────────
+  if (gameEnded) {
+    return (
+      <div className="container">
+        <div className="card card-large text-center" style={{ maxWidth: 600, margin: '0 auto' }}>
+          {/* 별 애니메이션 */}
+          <div style={{ fontSize: '5rem', marginBottom: '1rem', animation: 'pulse 2s infinite' }}>
+            🚀✨
+          </div>
+
+          <h1 style={{ fontSize: 'clamp(1.6rem,4vw,2.2rem)', marginBottom: '1rem', background: 'linear-gradient(135deg,#fbbf24,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+            탐사 여행 완료!
+          </h1>
+
+          <div style={{
+            background: 'linear-gradient(135deg,rgba(251,191,36,0.15),rgba(245,158,11,0.1))',
+            border: '2px solid rgba(251,191,36,0.4)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+          }}>
+            <p style={{ fontSize: 'clamp(1rem,2.5vw,1.2rem)', lineHeight: 2, fontWeight: 500 }}>
+              🎉 6번의 우주 임무를 모두 무사히 완수한 것을 축하합니다!
+            </p>
+          </div>
+
+          <div style={{
+            background: 'linear-gradient(135deg,rgba(167,139,250,0.15),rgba(139,92,246,0.1))',
+            border: '2px solid rgba(167,139,250,0.4)',
+            borderRadius: '16px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem',
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🌟</div>
+            <p style={{ fontSize: 'clamp(0.95rem,2.5vw,1.1rem)', lineHeight: 2 }}>
+              여러분 한 명 한 명이 앞으로 우주산업 발전에 기여할
+              <strong style={{ color: '#a78bfa' }}> 큰 인재</strong>가 되길 진심으로 바랍니다.
+            </p>
+          </div>
+
+          {/* 팀 점수 */}
+          {team && (
+            <div style={{
+              background: 'rgba(255,255,255,0.05)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              marginBottom: '1.5rem',
+            }}>
+              <p style={{ opacity: 0.7, marginBottom: '0.5rem' }}>
+                {studentData?.studentName}님의 팀 최종 점수
+              </p>
+              <div style={{ fontSize: '3rem', fontWeight: 700, color: '#fbbf24' }}>
+                {team.totalScore || 0}점
+              </div>
+              <p style={{ opacity: 0.6, fontSize: '0.9rem', marginTop: '0.25rem' }}>
+                {team.name} 팀
+              </p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center', marginBottom: '1rem' }}>
+            {['🛸','🌍','🚀','⭐','🛰️','🌟'].map((e, i) => (
+              <span key={i} style={{ fontSize: '2rem' }}>{e}</span>
+            ))}
+          </div>
+
+          <button
+            className="btn btn-secondary"
+            onClick={() => setCurrentScreen('home')}
+            style={{ marginTop: '0.5rem' }}
+          >
+            처음으로 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!team) {
     return (
@@ -84,7 +169,6 @@ function StudentGame() {
     );
   }
 
-  // ✅ 모든 라운드에 team(currentStudentName 포함) 전달
   return (
     <div className="container">
       {currentRound === 1 && <Round1 team={team} sessionCode={sessionCode} />}
