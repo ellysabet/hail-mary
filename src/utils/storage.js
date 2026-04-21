@@ -28,7 +28,6 @@ export function createSession(code, teacherName) {
     round6JobExplained: false,
     round6Posters: []
   };
-  
   return set(sessionRef, session)
     .then(() => session)
     .catch((error) => {
@@ -63,7 +62,7 @@ export function saveSession(code, sessionData) {
     });
 }
 
-// 세션 삭제
+// 세션 삭제 (수업 종료 시 완전 삭제)
 export function deleteSession(code) {
   const sessionRef = ref(database, `sessions/${code}`);
   return remove(sessionRef)
@@ -79,7 +78,6 @@ export function addTeam(sessionCode, teamName) {
     if (!session) {
       throw new Error('Session not found');
     }
-
     const teamId = `team_${Date.now()}`;
     const newTeam = {
       id: teamId,
@@ -92,7 +90,6 @@ export function addTeam(sessionCode, teamName) {
       round5Score: 0,
       round6Score: 0
     };
-
     session.teams.push(newTeam);
     return saveSession(sessionCode, session).then(() => newTeam);
   });
@@ -118,27 +115,39 @@ export function saveTeams(sessionCode, teams) {
 export function updateTeamScore(sessionCode, teamId, points) {
   return getSession(sessionCode).then((session) => {
     if (!session) return;
-
     const team = session.teams.find((t) => t.id === teamId);
     if (!team) return;
-
     team.totalScore += points;
-
-    // 현재 라운드 점수 업데이트
     const roundKey = `round${session.currentRound}Score`;
     if (team.hasOwnProperty(roundKey)) {
       team[roundKey] += points;
     }
-
     return saveSession(sessionCode, session);
   });
 }
+
+// 개인 점수 업데이트
+export const updateMemberScore = async (sessionCode, teamId, studentName, score) => {
+  try {
+    const session = await getSession(sessionCode);
+    if (!session || !session.teams) return;
+    const teamIndex = session.teams.findIndex(t => t.id === teamId);
+    if (teamIndex === -1) return;
+    if (!session.teams[teamIndex].memberScores) {
+      session.teams[teamIndex].memberScores = {};
+    }
+    const current = session.teams[teamIndex].memberScores[studentName] || 0;
+    session.teams[teamIndex].memberScores[studentName] = current + score;
+    await saveSession(sessionCode, session);
+  } catch (error) {
+    console.error('Error updating member score:', error);
+  }
+};
 
 // 라운드 변경
 export function updateRound(sessionCode, roundNumber) {
   return getSession(sessionCode).then((session) => {
     if (!session) return;
-
     session.currentRound = roundNumber;
     return saveSession(sessionCode, session);
   });
@@ -165,7 +174,6 @@ export function getRank(sessionCode, teamId) {
 // 실시간 세션 구독
 export function subscribeToSession(code, callback) {
   const sessionRef = ref(database, `sessions/${code}`);
-  
   const unsubscribe = onValue(sessionRef, (snapshot) => {
     if (snapshot.exists()) {
       callback(snapshot.val());
@@ -175,7 +183,6 @@ export function subscribeToSession(code, callback) {
   }, (error) => {
     console.error('Error subscribing to session:', error);
   });
-
   return unsubscribe;
 }
 
@@ -198,41 +205,3 @@ export function getAllSessions() {
       return [];
     });
 }
-export const updateMemberScore = async (sessionCode, teamId, studentName, score) => {
-  try {
-    const session = await getSession(sessionCode);
-    if (!session || !session.teams) return;
-
-    const teamIndex = session.teams.findIndex(t => t.id === teamId);
-    if (teamIndex === -1) return;
-
-    if (!session.teams[teamIndex].memberScores) {
-      session.teams[teamIndex].memberScores = {};
-    }
-
-    const current = session.teams[teamIndex].memberScores[studentName] || 0;
-    session.teams[teamIndex].memberScores[studentName] = current + score;
-
-    await saveSession(sessionCode, session);
-  } catch (error) {
-    console.error('Error updating member score:', error);
-  }
-};
-// ✅ storage.js에 추가할 함수
-
-/**
- * 세션 완전 삭제 (수업 종료 시)
- * @param {string} sessionCode - 삭제할 세션 코드
- */
-export const deleteSession = async (sessionCode) => {
-  try {
-    // Firebase Realtime Database 경로: sessions/{sessionCode}
-    const { ref, remove } = await import('firebase/database');
-    const { db } = await import('./firebase');
-    const sessionRef = ref(db, `sessions/${sessionCode}`);
-    await remove(sessionRef);
-  } catch (error) {
-    console.error('Error deleting session:', error);
-  }
-};
-
