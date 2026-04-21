@@ -59,9 +59,9 @@ function TeacherDashboard() {
       if (!session) return;
       session.currentRound = round;
       if (round === 1) session.round1JobExplained = false;
-      else if (round === 2) { session.round2JobExplained = false; session.round2MissionCompleted = false; }
-      else if (round === 3) session.round3JobExplained = false;
-      else if (round === 4) session.round4JobExplained = false;
+      else if (round === 2) { session.round2JobExplained = false; session.round2MissionCompleted = false; session.round2QuizReady = false; }
+      else if (round === 3) { session.round3JobExplained = false; session.round3QuizReady = false; }
+      else if (round === 4) { session.round4JobExplained = false; session.round4QuizReady = false; }
       else if (round === 5) { session.round5JobExplained = false; session.round5VideoWatched = false; }
       else if (round === 6) { session.round6JobExplained = false; session.round6Posters = []; session.round6QuizStarted = false; }
       await saveSession(sessionCode, session);
@@ -99,7 +99,17 @@ function TeacherDashboard() {
     } catch (e) { console.error(e); }
   };
 
-  const startRound6Quiz = async () => {
+  const completeExplanation = async (round) => {
+    try {
+      const session = await getSession(sessionCode);
+      if (!session) return;
+      session[`round${round}QuizReady`] = true;
+      await saveSession(sessionCode, session);
+      alert('✅ 퀴즈가 시작되었습니다!');
+    } catch (e) { console.error(e); }
+  };
+
+    const startRound6Quiz = async () => {
     try {
       const session = await getSession(sessionCode);
       if (!session) return;
@@ -168,6 +178,7 @@ function TeacherDashboard() {
           {/* 팀 순위 */}
           {resultsTab === 'team' && (
             <>
+              {/* 시상대 - 상위 3팀 */}
               {sortedTeams.length >= 2 && (
                 <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '1rem', margin: '1.5rem 0', minHeight: '160px' }}>
                   {sortedTeams.slice(0, 3).map((team, idx) => {
@@ -186,6 +197,8 @@ function TeacherDashboard() {
                   })}
                 </div>
               )}
+              {/* 전체 순위 목록 - 스크롤 */}
+              <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
               {sortedTeams.map((team, idx) => {
                 const rank = idx + 1;
                 const badge = getBadgeLocal(rank);
@@ -211,6 +224,7 @@ function TeacherDashboard() {
                   </div>
                 );
               })}
+              </div>
             </>
           )}
 
@@ -227,7 +241,8 @@ function TeacherDashboard() {
               </div>
               {individualRankings.length === 0
                 ? <div className="alert alert-info"><p>아직 개인 점수 데이터가 없습니다.</p></div>
-                : individualRankings.map((person, idx) => {
+                : <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {individualRankings.map((person, idx) => {
                     const g = getPersonalGrade(person.score);
                     return (
                       <div key={`${person.name}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', marginBottom: '0.5rem', background: g.bg, border: `1px solid ${g.color}44`, borderLeft: `4px solid ${g.color}`, borderRadius: '10px' }}>
@@ -247,7 +262,8 @@ function TeacherDashboard() {
                         </div>
                       </div>
                     );
-                  })
+                  })}
+                </div>
               }
             </>
           )}
@@ -294,6 +310,9 @@ function TeacherDashboard() {
           <div className="mt-2">
             <button onClick={completeJobExplanation} className="btn btn-primary" style={{ width: '100%' }}>✅ 직업 설명 완료 (미션 시작)</button>
             {currentRound === 2 && <button onClick={completeMission} className="btn btn-primary mt-1" style={{ width: '100%' }}>✅ 미션 완료 (퀴즈 시작)</button>}
+            {currentRound === 2 && <button onClick={() => completeExplanation(2)} className="btn btn-primary mt-1" style={{ width: '100%' }}>✅ 설명 완료 (퀴즈 시작)</button>}
+            {currentRound === 3 && <button onClick={() => completeExplanation(3)} className="btn btn-primary mt-1" style={{ width: '100%' }}>✅ 설명 완료 (퀴즈 시작)</button>}
+            {currentRound === 4 && <button onClick={() => completeExplanation(4)} className="btn btn-primary mt-1" style={{ width: '100%' }}>✅ 설명 완료 (퀴즈 시작)</button>}
             {currentRound === 5 && <button onClick={completeVideoWatching} className="btn btn-primary mt-1" style={{ width: '100%' }}>✅ 영상 시청 완료 (퀴즈 시작)</button>}
             {currentRound === 6 && (
               <button onClick={startRound6Quiz} className="btn btn-primary mt-1" style={{ width: '100%' }}>
@@ -415,46 +434,91 @@ function TeacherDashboard() {
           onClick={() => setSelectedPoster(null)}
           style={{
             position: 'fixed', inset: 0, zIndex: 1000,
-            background: 'rgba(0,0,0,0.8)',
+            background: 'rgba(0,0,0,0.85)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '1rem',
+            padding: '1.5rem',
           }}
         >
           <div
             onClick={e => e.stopPropagation()}
             style={{
               background: 'linear-gradient(135deg,#1e1b4b,#312e81)',
-              border: '2px solid rgba(16,185,129,0.6)',
-              borderRadius: '20px',
-              padding: '2rem',
-              maxWidth: '500px',
+              border: '2px solid rgba(16,185,129,0.7)',
+              borderRadius: '24px',
+              padding: '2.5rem',
+              maxWidth: '720px',
               width: '100%',
               position: 'relative',
-              maxHeight: '90vh',
+              maxHeight: '92vh',
               overflowY: 'auto',
             }}
           >
+            {/* X 버튼 - 크고 명확하게 */}
             <button
               onClick={() => setSelectedPoster(null)}
               style={{
-                position: 'absolute', top: '1rem', right: '1rem',
-                background: 'rgba(255,255,255,0.1)', border: 'none',
-                borderRadius: '50%', width: '2rem', height: '2rem',
-                color: 'white', cursor: 'pointer', fontSize: '1rem',
+                position: 'absolute', top: '1.25rem', right: '1.25rem',
+                background: 'rgba(239,68,68,0.8)',
+                border: '2px solid rgba(239,68,68,1)',
+                borderRadius: '50%',
+                width: '2.75rem', height: '2.75rem',
+                color: 'white', cursor: 'pointer',
+                fontSize: '1.2rem', fontWeight: 700,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                lineHeight: 1,
+                transition: 'background 0.15s',
+                zIndex: 10,
               }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(220,38,38,1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.8)'}
             >✕</button>
+
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '0.85rem', opacity: 0.6, marginBottom: '0.5rem' }}>{selectedPoster.teamName} 팀</div>
+              {/* 팀명 */}
+              <div style={{ fontSize: '1rem', opacity: 0.7, marginBottom: '0.75rem', fontWeight: 600 }}>
+                🏷️ {selectedPoster.teamName} 팀
+              </div>
+
+              {/* 포스터 이미지 또는 이모지 */}
               {selectedPoster.image ? (
                 <img src={selectedPoster.image} alt={selectedPoster.title}
-                  style={{ width: '100%', maxWidth: '360px', borderRadius: '12px', marginBottom: '1.5rem', border: '2px solid rgba(255,255,255,0.2)' }} />
+                  style={{ width: '100%', maxWidth: '560px', borderRadius: '16px', marginBottom: '1.75rem', border: '2px solid rgba(255,255,255,0.2)', display: 'block', margin: '0 auto 1.75rem' }} />
               ) : (
-                <div style={{ fontSize: '6rem', marginBottom: '1rem' }}>{selectedPoster.icon || '🌍'}</div>
+                <div style={{ fontSize: '8rem', marginBottom: '1.25rem' }}>{selectedPoster.icon || '🌍'}</div>
               )}
-              <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem' }}>{selectedPoster.title}</h3>
-              <p style={{ lineHeight: 1.8, marginBottom: '1rem', opacity: 0.9 }}>{selectedPoster.idea}</p>
-              <p style={{ fontSize: '1.1rem', fontWeight: 600, fontStyle: 'italic', color: '#34d399' }}>"{selectedPoster.slogan}"</p>
+
+              {/* 제목 */}
+              <h2 style={{ fontSize: 'clamp(1.4rem,3vw,2rem)', fontWeight: 700, marginBottom: '1.25rem' }}>
+                {selectedPoster.title}
+              </h2>
+
+              {/* 아이디어 */}
+              <p style={{ fontSize: '1.05rem', lineHeight: 1.9, marginBottom: '1.25rem', opacity: 0.9, maxWidth: '520px', margin: '0 auto 1.25rem' }}>
+                {selectedPoster.idea}
+              </p>
+
+              {/* 슬로건 */}
+              <div style={{
+                background: 'rgba(52,211,153,0.15)',
+                border: '1px solid rgba(52,211,153,0.4)',
+                borderRadius: '12px',
+                padding: '1rem 1.5rem',
+                display: 'inline-block',
+                marginTop: '0.5rem',
+              }}>
+                <p style={{ fontSize: '1.15rem', fontWeight: 700, fontStyle: 'italic', color: '#34d399' }}>
+                  "{selectedPoster.slogan}"
+                </p>
+              </div>
+
+              {/* 닫기 버튼 (하단) */}
+              <button
+                onClick={() => setSelectedPoster(null)}
+                className="btn btn-secondary"
+                style={{ marginTop: '1.75rem', width: '100%', maxWidth: '300px' }}
+              >
+                닫기
+              </button>
             </div>
           </div>
         </div>
