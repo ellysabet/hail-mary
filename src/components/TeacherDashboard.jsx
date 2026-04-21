@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { getSession, saveSession, subscribeToSession } from '../utils/storage';
+import { getSession, saveSession, subscribeToSession, deleteSession } from '../utils/storage';
 
 const getPersonalGrade = (score) => {
   if (score >= 500) return { grade: '우주 마스터',  color: '#FFD700', emoji: '🌟', bg: 'rgba(255,215,0,0.15)',    desc: '모든 임무 완벽 수행!' };
@@ -9,6 +9,8 @@ const getPersonalGrade = (score) => {
   if (score >= 200) return { grade: '우주 대원',    color: '#34d399', emoji: '🌍', bg: 'rgba(52,211,153,0.15)',  desc: '임무 수행 중인 대원' };
   return             { grade: '우주 훈련생',        color: '#94a3b8', emoji: '🪐', bg: 'rgba(148,163,184,0.15)', desc: '우주 여정을 시작하는 중' };
 };
+
+const ACTIVE_SESSION_KEY = 'hailmary_active_session';
 
 function TeacherDashboard() {
   const { sessionCode, currentRound, setCurrentRound, teams, setTeams, setCurrentScreen } = useGame();
@@ -290,8 +292,25 @@ function TeacherDashboard() {
             <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap', width: 'auto', padding: '0.6rem 1.1rem', fontSize: '0.9rem' }} onClick={() => openResults(false)}>
               📊 순위 보기
             </button>
-            <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap', width: 'auto', padding: '0.6rem 1.1rem', fontSize: '0.9rem' }} onClick={() => { if (window.confirm('정말 종료하시겠습니까?')) setCurrentScreen('home'); }}>
-              종료
+            <button className="btn btn-secondary" style={{ whiteSpace: 'nowrap', width: 'auto', padding: '0.6rem 1.1rem', fontSize: '0.9rem', background: 'rgba(239,68,68,0.2)', borderColor: 'rgba(239,68,68,0.5)' }}
+              onClick={async () => {
+                if (window.confirm('수업을 종료하시겠습니까?\n\n⚠️ 세션이 완전히 삭제됩니다.\n학생들이 해당 세션으로 재접근 불가합니다.')) {
+                  try {
+                    const session = await getSession(sessionCode);
+                    if (session) {
+                      session.closed = true;
+                      session.gameEnded = true;
+                      await saveSession(sessionCode, session);
+                    }
+                    setTimeout(async () => {
+                      try { await deleteSession(sessionCode); } catch(e) {}
+                    }, 3000);
+                  } catch(e) {}
+                  localStorage.removeItem(ACTIVE_SESSION_KEY);
+                  setCurrentScreen('home');
+                }
+              }}>
+              🔴 수업 종료
             </button>
           </div>
         </div>
@@ -526,7 +545,17 @@ function TeacherDashboard() {
 
       {/* 최종 결과 버튼 */}
       <div className="card mt-2">
-        <button onClick={() => openResults(true)} className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem' }}>🏆 최종 결과 보기</button>
+        <button onClick={async () => {
+          // 학생들 화면에 축하 메시지 표시
+          try {
+            const session = await getSession(sessionCode);
+            if (session) {
+              session.finalResults = true;
+              await saveSession(sessionCode, session);
+            }
+          } catch(e) {}
+          openResults(false);
+        }} className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontSize: '1.1rem' }}>🏆 최종 결과 보기</button>
       </div>
     </div>
   );
