@@ -109,7 +109,18 @@ function TeacherDashboard() {
     } catch (e) { console.error(e); }
   };
 
-    const pauseRound = async () => {
+  
+  // 강제 stage 이동
+  const forceStage = async (round, stage) => {
+    try {
+      const session = await getSession(sessionCode);
+      if (!session) return;
+      session[`round${round}Stage`] = stage;
+      await saveSession(sessionCode, session);
+    } catch (e) { console.error(e); }
+  };
+
+  const pauseRound = async () => {
     setCurrentRound(0);
     try {
       const session = await getSession(sessionCode);
@@ -289,6 +300,33 @@ function TeacherDashboard() {
                 ✅ 포스터 감상 완료 (퀴즈 시작)
               </button>
             )}
+
+            {/* 강제 단계 이동 */}
+            {currentRound > 0 && (() => {
+              const stageMap = {
+    1: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'missionIntro', label: '미션안내' }, { key: 'mission', label: '미션' }, { key: 'quiz', label: '퀴즈' }],
+    2: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'mission', label: '미션' }, { key: 'explanation', label: '설명' }, { key: 'quiz', label: '퀴즈' }],
+    3: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'mission1', label: '미션1' }, { key: 'summary', label: '비교정리' }, { key: 'mission2', label: '미션2' }, { key: 'explanation', label: '설명' }, { key: 'quiz', label: '퀴즈' }],
+    4: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'mission', label: '미션' }, { key: 'explanation', label: '설명' }, { key: 'quiz', label: '퀴즈' }],
+    5: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'mission', label: '미션' }, { key: 'success', label: '성공' }, { key: 'explanation', label: '설명' }, { key: 'explanation_video', label: '영상시청' }, { key: 'quiz', label: '퀴즈' }],
+    6: [{ key: 'story', label: '스토리' }, { key: 'job', label: '직업소개' }, { key: 'mission', label: '미션' }, { key: 'posterDone', label: '포스터완료' }, { key: 'quiz', label: '퀴즈' }]
+  };
+              const stages = stageMap[currentRound] || [];
+              if (stages.length === 0) return null;
+              return (
+                <div style={{ marginTop: '1rem', padding: '0.875rem', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '10px' }}>
+                  <p style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '0.5rem' }}>⚡ 강제 단계 이동 (뒤처진 학생용)</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                    {stages.map(s => (
+                      <button key={s.key} onClick={() => forceStage(currentRound, s.key)}
+                        style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem', background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: '8px', color: 'white', cursor: 'pointer' }}>
+                        {s.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
