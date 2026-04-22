@@ -515,7 +515,7 @@ export default function Round5({ team, sessionCode }) {
               👨‍🚀 관련 직업
             </h2>
 
-            <div className="job-grid">
+            <div className="job-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
               {jobs.map((job, idx) => (
                 <div
                   key={idx}
