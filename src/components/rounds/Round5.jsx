@@ -196,29 +196,67 @@ export default function Round5({ team, sessionCode }) {
     return (
       <div className="card card-medium round-transition">
         <RoundHeader />
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <div style={{ fontSize: '7rem' }}>🌍</div>
-        </div>
-        <div className="story-box" style={{ background: 'rgba(30,64,175,0.2)', border: '2px solid rgba(30,64,175,0.5)' }}>
+        <style>{`
+          @keyframes orbit { from{transform:rotate(0deg) translateX(40px) rotate(0deg)} to{transform:rotate(360deg) translateX(40px) rotate(-360deg)} }
+          @keyframes escape { 0%{transform:rotate(0deg) translateX(40px);opacity:1} 50%{transform:rotate(180deg) translateX(60px);opacity:0.7} 100%{transform:rotate(360deg) translateX(100px);opacity:0} }
+          @keyframes flyAway { 0%{transform:translateX(0) translateY(0) scale(1);opacity:1} 100%{transform:translateX(180px) translateY(-40px) scale(0.5);opacity:0} }
+        `}</style>
+
+        <div className="story-box" style={{ background: 'rgba(30,64,175,0.2)', border: '2px solid rgba(30,64,175,0.5)', marginBottom: '1.5rem' }}>
           <p>"타우 세티 e 행성 탐사 완료! 이제 이 귀중한 데이터를 가지고 지구로 돌아갈 시간입니다. 행성 중력을 벗어나 대기권에 정확히 진입해야 합니다!"</p>
         </div>
 
-        {/* 우주속도 개념 */}
-        <div style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {[
-            { icon: '🛰️', title: '제1우주속도 (7.9 km/s)', desc: '행성 주위를 원 궤도로 도는 최소 속도', color: 'rgba(59,130,246,0.2)', border: 'rgba(59,130,246,0.5)', example: '예) 국제우주정거장(ISS)' },
-            { icon: '🚀', title: '제2우주속도 (11.2 km/s)', desc: '지구 중력을 완전히 벗어나는 탈출 속도', color: 'rgba(251,191,36,0.2)', border: 'rgba(251,191,36,0.5)', example: '예) 달 탐사선(아폴로), 화성 탐사선' },
-            { icon: '🌌', title: '제3우주속도 (16.7 km/s)', desc: '태양계를 탈출하는 속도', color: 'rgba(168,85,247,0.2)', border: 'rgba(168,85,247,0.5)', example: '예) 보이저 1호, 보이저 2호' },
-          ].map((s, i) => (
-            <div key={i} style={{ background: s.color, border: `2px solid ${s.border}`, borderRadius: '12px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-              <div style={{ fontSize: '2.5rem', flexShrink: 0 }}>{s.icon}</div>
-              <div>
-                <p style={{ fontWeight: 700, marginBottom: '0.2rem' }}>{s.title}</p>
-                <p className="text-small">{s.desc}</p>
-                <p className="text-small" style={{ opacity: 0.7, marginTop: '0.2rem' }}>{s.example}</p>
-              </div>
+        <h3 style={{ fontSize: '1.3rem', marginBottom: '1.25rem', textAlign: 'center', background: 'linear-gradient(90deg,#60a5fa,#a78bfa)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', fontWeight:'bold' }}>
+          💡 우주 속도의 비밀
+        </h3>
+
+        {/* 제1우주속도 */}
+        <div style={{ background:'rgba(59,130,246,0.2)', border:'2px solid rgba(59,130,246,0.5)', borderRadius:'12px', padding:'1.5rem', marginBottom:'1rem' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'1rem', marginBottom:'1rem' }}>
+            <div style={{ fontSize:'2.5rem' }}>🛰️</div>
+            <div>
+              <p style={{ fontWeight:700, fontSize:'1.1rem', marginBottom:'0.2rem' }}>제1우주속도 (7.9 km/s)</p>
+              <p className="text-small">행성 주위를 원 궤도로 도는 최소 속도</p>
             </div>
-          ))}
+          </div>
+          <div style={{ position:'relative', height:'100px', background:'rgba(0,0,0,0.3)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', marginBottom:'0.75rem' }}>
+            <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#3b82f6,#1e40af)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', position:'absolute' }}>🌍</div>
+            <div style={{ position:'absolute', fontSize:'1.2rem', animation:'orbit 4s linear infinite' }}>🛰️</div>
+            <div style={{ width:'80px', height:'80px', border:'2px dashed rgba(255,255,255,0.3)', borderRadius:'50%', position:'absolute' }}/>
+          </div>
+          <p className="text-small" style={{ opacity:0.85 }}><strong>예시:</strong> 국제우주정거장(ISS), 스타링크 위성</p>
+        </div>
+
+        {/* 제2우주속도 */}
+        <div style={{ background:'rgba(251,191,36,0.2)', border:'2px solid rgba(251,191,36,0.5)', borderRadius:'12px', padding:'1.5rem', marginBottom:'1rem' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'1rem', marginBottom:'1rem' }}>
+            <div style={{ fontSize:'2.5rem' }}>🚀</div>
+            <div>
+              <p style={{ fontWeight:700, fontSize:'1.1rem', marginBottom:'0.2rem' }}>제2우주속도 (11.2 km/s)</p>
+              <p className="text-small">지구의 중력을 완전히 벗어나는 탈출 속도</p>
+            </div>
+          </div>
+          <div style={{ position:'relative', height:'100px', background:'rgba(0,0,0,0.3)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', marginBottom:'0.75rem' }}>
+            <div style={{ width:'36px', height:'36px', background:'linear-gradient(135deg,#fbbf24,#f59e0b)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.4rem', position:'absolute' }}>🌍</div>
+            <div style={{ position:'absolute', fontSize:'1.2rem', animation:'escape 3s ease-out infinite' }}>🚀</div>
+          </div>
+          <p className="text-small" style={{ opacity:0.85 }}><strong>예시:</strong> 달 탐사 미션(아폴로, 아르테미스), 화성 탐사선</p>
+        </div>
+
+        {/* 제3우주속도 */}
+        <div style={{ background:'rgba(168,85,247,0.2)', border:'2px solid rgba(168,85,247,0.5)', borderRadius:'12px', padding:'1.5rem', marginBottom:'1.5rem' }}>
+          <div style={{ display:'flex', alignItems:'center', gap:'1rem', marginBottom:'1rem' }}>
+            <div style={{ fontSize:'2.5rem' }}>🌌</div>
+            <div>
+              <p style={{ fontWeight:700, fontSize:'1.1rem', marginBottom:'0.2rem' }}>제3우주속도 (16.7 km/s)</p>
+              <p className="text-small">태양의 중력까지 벗어나 태양계를 탈출하는 속도</p>
+            </div>
+          </div>
+          <div style={{ position:'relative', height:'100px', background:'rgba(0,0,0,0.3)', borderRadius:'8px', display:'flex', alignItems:'center', justifyContent:'center', overflow:'hidden', marginBottom:'0.75rem' }}>
+            <div style={{ width:'44px', height:'44px', background:'linear-gradient(135deg,#fbbf24,#f59e0b)', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'1.6rem', position:'absolute', left:'20%', boxShadow:'0 0 16px rgba(251,191,36,0.5)' }}>☀️</div>
+            <div style={{ position:'absolute', fontSize:'1.2rem', left:'30%', animation:'flyAway 4s ease-in infinite' }}>🛸</div>
+          </div>
+          <p className="text-small" style={{ opacity:0.85 }}><strong>예시:</strong> 보이저 1호, 보이저 2호 (성간 우주 진입), 뉴호라이즌스</p>
         </div>
 
         <button className="btn btn-primary mt-2" onClick={goToNextStage}>
