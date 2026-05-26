@@ -274,7 +274,6 @@ function Round6({ team, sessionCode }) {
       timestamp: Date.now()
     };
     
-    session.round6Posters = session.round6Posters.filter(p => p.teamId !== team.id);
     session.round6Posters.push(posterData);
     
     await saveSession(sessionCode, session);
