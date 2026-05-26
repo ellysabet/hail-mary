@@ -423,10 +423,13 @@ function TeacherDashboard() {
         });
         const teamGroups = Object.values(grouped);
 
+        // 파일명 특수문자 제거
+        const sanitize = (str) => (str || '').replace(/[\\/:*?"<>|]/g, '').trim();
+
         // 포스터 → PNG dataURL 변환 (이모지 포스터는 canvas로 렌더링)
         const posterToPngDataUrl = (poster) => new Promise((resolve) => {
           if (poster.image) {
-            resolve({ dataUrl: poster.image, filename: `${poster.teamName}_${poster.title}.png` });
+            resolve({ dataUrl: poster.image, filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
             return;
           }
           // 이모지 포스터 → canvas로 PNG 생성
@@ -457,7 +460,7 @@ function TeacherDashboard() {
           ctx.fillStyle = '#34d399';
           ctx.font = 'italic 18px sans-serif';
           ctx.fillText(`"${poster.slogan || ''}"`, 300, 370);
-          resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${poster.teamName}_${poster.title}.png` });
+          resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
         });
 
         // 개별 포스터 다운로드
