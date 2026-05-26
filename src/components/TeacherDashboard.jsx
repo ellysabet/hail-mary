@@ -412,40 +412,132 @@ function TeacherDashboard() {
         </div>
       </div>
 
-      {/* Round6 포스터 갤러리 */}
-      {currentRound === 6 && round6Posters.length > 0 && (
-        <div className="card mt-2">
-          <h3>🎨 팀 포스터 갤러리 ({round6Posters.length}팀 제출)</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: '1rem', marginTop: '1rem' }}>
-            {round6Posters.map((poster, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedPoster(poster)}
+      {/* Round6 포스터 갤러리 - 팀별 구분 + 다운로드 */}
+      {currentRound === 6 && round6Posters.length > 0 && (() => {
+        // 팀별로 그룹화
+        const grouped = {};
+        round6Posters.forEach(poster => {
+          const key = poster.teamId || poster.teamName;
+          if (!grouped[key]) grouped[key] = { teamName: poster.teamName, posters: [] };
+          grouped[key].posters.push(poster);
+        });
+        const teamGroups = Object.values(grouped);
+
+        // 개별 포스터 다운로드
+        const downloadPoster = (poster) => {
+          if (poster.image) {
+            const a = document.createElement('a');
+            a.href = poster.image;
+            a.download = `${poster.teamName}_${poster.title}.png`;
+            a.click();
+          } else {
+            // 이모지 포스터는 텍스트 카드로 다운로드
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
+              <rect width="600" height="400" fill="#1e1b4b"/>
+              <text x="300" y="100" font-size="80" text-anchor="middle">${poster.icon || '🌍'}</text>
+              <text x="300" y="170" font-size="28" fill="white" font-weight="bold" text-anchor="middle" font-family="sans-serif">${poster.title}</text>
+              <foreignObject x="40" y="190" width="520" height="120">
+                <div xmlns="http://www.w3.org/1999/xhtml" style="color:rgba(255,255,255,0.85);font-size:16px;line-height:1.6;font-family:sans-serif;text-align:center">${poster.idea}</div>
+              </foreignObject>
+              <text x="300" y="360" font-size="18" fill="#34d399" font-style="italic" text-anchor="middle" font-family="sans-serif">"${poster.slogan}"</text>
+            </svg>`;
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `${poster.teamName}_${poster.title}.svg`;
+            a.click();
+          }
+        };
+
+        // 팀 전체 다운로드 (순차적으로)
+        const downloadTeam = async (posters, teamName) => {
+          for (let i = 0; i < posters.length; i++) {
+            downloadPoster(posters[i]);
+            await new Promise(r => setTimeout(r, 300));
+          }
+        };
+
+        // 학급 전체 다운로드
+        const downloadAll = async () => {
+          const allPosters = round6Posters;
+          for (let i = 0; i < allPosters.length; i++) {
+            downloadPoster(allPosters[i]);
+            await new Promise(r => setTimeout(r, 300));
+          }
+        };
+
+        return (
+          <div className="card mt-2">
+            {/* 헤더 + 학급 전체 다운로드 */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <h3 style={{ margin: 0 }}>🎨 팀 포스터 갤러리 ({round6Posters.length}개 제출)</h3>
+              <button
+                onClick={downloadAll}
                 style={{
-                  background: 'rgba(16,185,129,0.1)',
-                  border: '2px solid rgba(16,185,129,0.4)',
-                  borderRadius: '12px',
-                  padding: '1rem',
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
+                  padding: '0.5rem 1.1rem', borderRadius: '8px', border: '1px solid rgba(16,185,129,0.6)',
+                  background: 'rgba(16,185,129,0.15)', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem',
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
                 }}
-                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
-                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
               >
-                {poster.image ? (
-                  <img src={poster.image} alt={poster.title}
-                    style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.5rem' }} />
-                ) : (
-                  <div style={{ fontSize: '3.5rem', marginBottom: '0.5rem' }}>{poster.icon || '🌍'}</div>
-                )}
-                <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{poster.title}</div>
-                <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{poster.teamName} 팀</div>
+                ⬇️ 학급 전체 다운로드
+              </button>
+            </div>
+
+            {/* 팀별 섹션 */}
+            {teamGroups.map((group) => (
+              <div key={group.teamName} style={{ marginBottom: '1.75rem' }}>
+                {/* 팀 헤더 */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid rgba(16,185,129,0.3)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', color: '#34d399' }}>🏷️ {group.teamName} 팀 ({group.posters.length}개)</div>
+                  <button
+                    onClick={() => downloadTeam(group.posters, group.teamName)}
+                    style={{
+                      padding: '0.35rem 0.85rem', borderRadius: '6px', border: '1px solid rgba(96,165,250,0.5)',
+                      background: 'rgba(96,165,250,0.12)', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600,
+                    }}
+                  >
+                    ⬇️ 팀 전체
+                  </button>
+                </div>
+
+                {/* 팀 포스터 그리드 */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: '0.875rem' }}>
+                  {group.posters.map((poster, idx) => (
+                    <div key={idx} style={{ background: 'rgba(16,185,129,0.08)', border: '2px solid rgba(16,185,129,0.3)', borderRadius: '12px', overflow: 'hidden' }}>
+                      {/* 이미지/이모지 - 클릭시 모달 */}
+                      <div
+                        onClick={() => setSelectedPoster(poster)}
+                        style={{ cursor: 'pointer', padding: '0.75rem', textAlign: 'center' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(16,185,129,0.18)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        {poster.image ? (
+                          <img src={poster.image} alt={poster.title}
+                            style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '8px', marginBottom: '0.4rem' }} />
+                        ) : (
+                          <div style={{ fontSize: '3rem', marginBottom: '0.4rem' }}>{poster.icon || '🌍'}</div>
+                        )}
+                        <div style={{ fontWeight: 700, fontSize: '0.85rem', marginBottom: '0.2rem' }}>{poster.title}</div>
+                        <div style={{ fontSize: '0.72rem', opacity: 0.6, fontStyle: 'italic' }}>"{poster.slogan}"</div>
+                      </div>
+                      {/* 개별 다운로드 버튼 */}
+                      <button
+                        onClick={() => downloadPoster(poster)}
+                        style={{
+                          width: '100%', padding: '0.4rem', border: 'none', borderTop: '1px solid rgba(16,185,129,0.2)',
+                          background: 'rgba(16,185,129,0.12)', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: '0.78rem',
+                        }}
+                      >
+                        ⬇️ 개별 다운로드
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* 포스터 상세 모달 */}
       {selectedPoster && (
@@ -531,13 +623,30 @@ function TeacherDashboard() {
               </div>
 
               {/* 닫기 버튼 (하단) */}
-              <button
-                onClick={() => setSelectedPoster(null)}
-                className="btn btn-secondary"
-                style={{ marginTop: '1.75rem', width: '100%', maxWidth: '300px' }}
-              >
-                닫기
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => {
+                    if (selectedPoster.image) {
+                      const a = document.createElement('a');
+                      a.href = selectedPoster.image;
+                      a.download = `${selectedPoster.teamName}_${selectedPoster.title}.png`;
+                      a.click();
+                    }
+                  }}
+                  className="btn btn-primary"
+                  style={{ maxWidth: '200px' }}
+                  disabled={!selectedPoster.image}
+                >
+                  ⬇️ 다운로드
+                </button>
+                <button
+                  onClick={() => setSelectedPoster(null)}
+                  className="btn btn-secondary"
+                  style={{ maxWidth: '200px' }}
+                >
+                  닫기
+                </button>
+              </div>
             </div>
           </div>
         </div>
