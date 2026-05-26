@@ -423,47 +423,93 @@ function TeacherDashboard() {
         });
         const teamGroups = Object.values(grouped);
 
-        // 개별 포스터 다운로드
-        const downloadPoster = (poster) => {
+        // 포스터 → PNG dataURL 변환 (이모지 포스터는 canvas로 렌더링)
+        const posterToPngDataUrl = (poster) => new Promise((resolve) => {
           if (poster.image) {
-            const a = document.createElement('a');
-            a.href = poster.image;
-            a.download = `${poster.teamName}_${poster.title}.png`;
-            a.click();
-          } else {
-            // 이모지 포스터는 텍스트 카드로 다운로드
-            const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400">
-              <rect width="600" height="400" fill="#1e1b4b"/>
-              <text x="300" y="100" font-size="80" text-anchor="middle">${poster.icon || '🌍'}</text>
-              <text x="300" y="170" font-size="28" fill="white" font-weight="bold" text-anchor="middle" font-family="sans-serif">${poster.title}</text>
-              <foreignObject x="40" y="190" width="520" height="120">
-                <div xmlns="http://www.w3.org/1999/xhtml" style="color:rgba(255,255,255,0.85);font-size:16px;line-height:1.6;font-family:sans-serif;text-align:center">${poster.idea}</div>
-              </foreignObject>
-              <text x="300" y="360" font-size="18" fill="#34d399" font-style="italic" text-anchor="middle" font-family="sans-serif">"${poster.slogan}"</text>
-            </svg>`;
-            const blob = new Blob([svg], { type: 'image/svg+xml' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `${poster.teamName}_${poster.title}.svg`;
-            a.click();
+            resolve({ dataUrl: poster.image, filename: `${poster.teamName}_${poster.title}.png` });
+            return;
           }
+          // 이모지 포스터 → canvas로 PNG 생성
+          const canvas = document.createElement('canvas');
+          canvas.width = 600; canvas.height = 400;
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = '#1e1b4b';
+          ctx.fillRect(0, 0, 600, 400);
+          ctx.font = '72px serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(poster.icon || '🌍', 300, 110);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 26px sans-serif';
+          ctx.fillText(poster.title || '', 300, 170);
+          // 아이디어 텍스트 줄바꿈
+          ctx.font = '16px sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          const words = (poster.idea || '').split(' ');
+          let line = ''; let y = 210;
+          words.forEach(word => {
+            const test = line + word + ' ';
+            if (ctx.measureText(test).width > 520 && line) {
+              ctx.fillText(line.trim(), 300, y); line = word + ' '; y += 24;
+            } else { line = test; }
+          });
+          if (line) ctx.fillText(line.trim(), 300, y);
+          // 슬로건
+          ctx.fillStyle = '#34d399';
+          ctx.font = 'italic 18px sans-serif';
+          ctx.fillText(`"${poster.slogan || ''}"`, 300, 370);
+          resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${poster.teamName}_${poster.title}.png` });
+        });
+
+        // 개별 포스터 다운로드
+        const downloadPoster = async (poster) => {
+          const { dataUrl, filename } = await posterToPngDataUrl(poster);
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = filename;
+          a.click();
         };
 
-        // 팀 전체 다운로드 (순차적으로)
-        const downloadTeam = async (posters, teamName) => {
-          for (let i = 0; i < posters.length; i++) {
-            downloadPoster(posters[i]);
-            await new Promise(r => setTimeout(r, 300));
+        // ZIP 생성 및 다운로드 (JSZip CDN 동적 로드)
+        const downloadAsZip = async (posters, zipName) => {
+          // JSZip 동적 로드
+          if (!window.JSZip) {
+            await new Promise((resolve, reject) => {
+              const script = document.createElement('script');
+              script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+              script.onload = resolve; script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          }
+          const zip = new window.JSZip();
+          const nameCount = {};
+          for (const poster of posters) {
+            const { dataUrl, filename } = await posterToPngDataUrl(poster);
+            // 중복 파일명 처리
+            const base = filename.replace('.png', '');
+            nameCount[base] = (nameCount[base] || 0) + 1;
+            const finalName = nameCount[base] > 1 ? `${base}_${nameCount[base]}.png` : filename;
+            const base64 = dataUrl.split(',')[1];
+            zip.file(finalName, base64, { base64: true });
+          }
+          const blob = await zip.generateAsync({ type: 'blob' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `${zipName}.zip`;
+          a.click();
+        };
+
+        // 팀 전체 다운로드
+        const downloadTeam = (posters, teamName) => {
+          if (posters.length === 1) {
+            downloadPoster(posters[0]);
+          } else {
+            downloadAsZip(posters, `${teamName}_팀_포스터`);
           }
         };
 
         // 학급 전체 다운로드
-        const downloadAll = async () => {
-          const allPosters = round6Posters;
-          for (let i = 0; i < allPosters.length; i++) {
-            downloadPoster(allPosters[i]);
-            await new Promise(r => setTimeout(r, 300));
-          }
+        const downloadAll = () => {
+          downloadAsZip(round6Posters, '학급_전체_포스터');
         };
 
         return (
@@ -625,17 +671,45 @@ function TeacherDashboard() {
               {/* 닫기 버튼 (하단) */}
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (selectedPoster.image) {
                       const a = document.createElement('a');
                       a.href = selectedPoster.image;
+                      a.download = `${selectedPoster.teamName}_${selectedPoster.title}.png`;
+                      a.click();
+                    } else {
+                      // 이모지 포스터 PNG 변환 후 다운로드
+                      const canvas = document.createElement('canvas');
+                      canvas.width = 600; canvas.height = 400;
+                      const ctx = canvas.getContext('2d');
+                      ctx.fillStyle = '#1e1b4b';
+                      ctx.fillRect(0, 0, 600, 400);
+                      ctx.font = '72px serif';
+                      ctx.textAlign = 'center';
+                      ctx.fillText(selectedPoster.icon || '🌍', 300, 110);
+                      ctx.fillStyle = '#ffffff';
+                      ctx.font = 'bold 26px sans-serif';
+                      ctx.fillText(selectedPoster.title || '', 300, 170);
+                      ctx.font = '16px sans-serif';
+                      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+                      const words = (selectedPoster.idea || '').split(' ');
+                      let line = ''; let y = 210;
+                      words.forEach(word => {
+                        const test = line + word + ' ';
+                        if (ctx.measureText(test).width > 520 && line) { ctx.fillText(line.trim(), 300, y); line = word + ' '; y += 24; } else { line = test; }
+                      });
+                      if (line) ctx.fillText(line.trim(), 300, y);
+                      ctx.fillStyle = '#34d399';
+                      ctx.font = 'italic 18px sans-serif';
+                      ctx.fillText(`"${selectedPoster.slogan || ''}"`, 300, 370);
+                      const a = document.createElement('a');
+                      a.href = canvas.toDataURL('image/png');
                       a.download = `${selectedPoster.teamName}_${selectedPoster.title}.png`;
                       a.click();
                     }
                   }}
                   className="btn btn-primary"
                   style={{ maxWidth: '200px' }}
-                  disabled={!selectedPoster.image}
                 >
                   ⬇️ 다운로드
                 </button>
