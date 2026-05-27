@@ -426,41 +426,103 @@ function TeacherDashboard() {
         // 파일명 특수문자 제거
         const sanitize = (str) => (str || '').replace(/[\\/:*?"<>|]/g, '').trim();
 
-        // 포스터 → PNG dataURL 변환 (이모지 포스터는 canvas로 렌더링)
-        const posterToPngDataUrl = (poster) => new Promise((resolve) => {
-          if (poster.image) {
-            resolve({ dataUrl: poster.image, filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
-            return;
-          }
-          // 이모지 포스터 → canvas로 PNG 생성
-          const canvas = document.createElement('canvas');
-          canvas.width = 600; canvas.height = 400;
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = '#1e1b4b';
-          ctx.fillRect(0, 0, 600, 400);
-          ctx.font = '72px serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(poster.icon || '🌍', 300, 110);
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 26px sans-serif';
-          ctx.fillText(poster.title || '', 300, 170);
-          // 아이디어 텍스트 줄바꿈
-          ctx.font = '16px sans-serif';
-          ctx.fillStyle = 'rgba(255,255,255,0.85)';
-          const words = (poster.idea || '').split(' ');
-          let line = ''; let y = 210;
+        // 텍스트 줄바꿈 헬퍼
+        const wrapText = (ctx, text, x, y, maxWidth, lineHeight) => {
+          const words = (text || '').split(' ');
+          let line = '';
           words.forEach(word => {
             const test = line + word + ' ';
-            if (ctx.measureText(test).width > 520 && line) {
-              ctx.fillText(line.trim(), 300, y); line = word + ' '; y += 24;
+            if (ctx.measureText(test).width > maxWidth && line) {
+              ctx.fillText(line.trim(), x, y);
+              line = word + ' '; y += lineHeight;
             } else { line = test; }
           });
-          if (line) ctx.fillText(line.trim(), 300, y);
-          // 슬로건
-          ctx.fillStyle = '#34d399';
-          ctx.font = 'italic 18px sans-serif';
-          ctx.fillText(`"${poster.slogan || ''}"`, 300, 370);
-          resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
+          if (line) ctx.fillText(line.trim(), x, y);
+          return y;
+        };
+
+        // 포스터 → PNG dataURL 변환 (그림 + 제목 + 설명 + 슬로건 합성)
+        const posterToPngDataUrl = (poster) => new Promise((resolve) => {
+          const W = 700, IMG_H = 420, BOTTOM_H = 220, H = IMG_H + BOTTOM_H;
+          const canvas = document.createElement('canvas');
+          canvas.width = W; canvas.height = H;
+          const ctx = canvas.getContext('2d');
+
+          // 배경
+          const grad = ctx.createLinearGradient(0, 0, 0, H);
+          grad.addColorStop(0, '#1e1b4b');
+          grad.addColorStop(1, '#0f172a');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, W, H);
+
+          // 팀명 (상단)
+          ctx.fillStyle = 'rgba(255,255,255,0.5)';
+          ctx.font = '500 15px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`🏷️ ${poster.teamName} 팀`, W / 2, 28);
+
+          const drawBottom = () => {
+            // 구분선
+            ctx.strokeStyle = 'rgba(52,211,153,0.4)';
+            ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(40, IMG_H + 8); ctx.lineTo(W - 40, IMG_H + 8); ctx.stroke();
+
+            // 제목
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 26px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(poster.title || '', W / 2, IMG_H + 42);
+
+            // 아이디어 설명
+            ctx.font = '15px sans-serif';
+            ctx.fillStyle = 'rgba(255,255,255,0.82)';
+            wrapText(ctx, poster.idea || '', W / 2, IMG_H + 76, W - 80, 22);
+
+            // 슬로건 박스
+            const sloganY = IMG_H + BOTTOM_H - 44;
+            ctx.fillStyle = 'rgba(52,211,153,0.15)';
+            ctx.strokeStyle = 'rgba(52,211,153,0.5)';
+            ctx.lineWidth = 1;
+            const bw = W - 80;
+            ctx.beginPath();
+            ctx.roundRect(40, sloganY - 22, bw, 36, 8);
+            ctx.fill(); ctx.stroke();
+            ctx.fillStyle = '#34d399';
+            ctx.font = 'italic bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(`"${poster.slogan || ''}"`, W / 2, sloganY + 4);
+          };
+
+          if (poster.image) {
+            // 이미지 포스터: 그림을 상단에 그리고 하단에 텍스트
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => {
+              // 이미지 영역 (패딩 포함)
+              const pad = 8;
+              ctx.save();
+              ctx.beginPath();
+              ctx.roundRect(pad, 34, W - pad * 2, IMG_H - 34 - pad, 12);
+              ctx.clip();
+              ctx.drawImage(img, pad, 34, W - pad * 2, IMG_H - 34 - pad);
+              ctx.restore();
+              drawBottom();
+              resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
+            };
+            img.onerror = () => {
+              // 이미지 로드 실패 시 빈 영역으로
+              drawBottom();
+              resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
+            };
+            img.src = poster.image;
+          } else {
+            // 이모지 포스터: 이모지를 상단에
+            ctx.font = '120px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(poster.icon || '🌍', W / 2, IMG_H / 2 + 30);
+            drawBottom();
+            resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
+          }
         });
 
         // 개별 포스터 다운로드
@@ -675,40 +737,48 @@ function TeacherDashboard() {
               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                 <button
                   onClick={async () => {
-                    if (selectedPoster.image) {
+                    // posterToPngDataUrl을 갤러리 스코프 밖에서도 쓸 수 있도록 인라인으로 합성
+                    const poster = selectedPoster;
+                    const sanitizeFn = (str) => (str || '').replace(/[\\/:*?"<>|]/g, '').trim();
+                    const W = 700, IMG_H = 420, BOTTOM_H = 220, H = IMG_H + BOTTOM_H;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = W; canvas.height = H;
+                    const ctx = canvas.getContext('2d');
+                    const grad = ctx.createLinearGradient(0, 0, 0, H);
+                    grad.addColorStop(0, '#1e1b4b'); grad.addColorStop(1, '#0f172a');
+                    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                    ctx.font = '500 15px sans-serif'; ctx.textAlign = 'center';
+                    ctx.fillText(`🏷️ ${poster.teamName} 팀`, W / 2, 28);
+                    const drawBottom = () => {
+                      ctx.strokeStyle = 'rgba(52,211,153,0.4)'; ctx.lineWidth = 1;
+                      ctx.beginPath(); ctx.moveTo(40, IMG_H + 8); ctx.lineTo(W - 40, IMG_H + 8); ctx.stroke();
+                      ctx.fillStyle = '#ffffff'; ctx.font = 'bold 26px sans-serif'; ctx.textAlign = 'center';
+                      ctx.fillText(poster.title || '', W / 2, IMG_H + 42);
+                      ctx.font = '15px sans-serif'; ctx.fillStyle = 'rgba(255,255,255,0.82)';
+                      const words = (poster.idea || '').split(' '); let line = ''; let y = IMG_H + 76;
+                      words.forEach(w => { const t = line + w + ' '; if (ctx.measureText(t).width > W - 80 && line) { ctx.fillText(line.trim(), W/2, y); line = w+' '; y+=22; } else line=t; });
+                      if (line) ctx.fillText(line.trim(), W/2, y);
+                      const sY = IMG_H + BOTTOM_H - 44;
+                      ctx.fillStyle = 'rgba(52,211,153,0.15)'; ctx.strokeStyle = 'rgba(52,211,153,0.5)'; ctx.lineWidth=1;
+                      ctx.beginPath(); ctx.roundRect(40, sY-22, W-80, 36, 8); ctx.fill(); ctx.stroke();
+                      ctx.fillStyle = '#34d399'; ctx.font = 'italic bold 16px sans-serif'; ctx.textAlign='center';
+                      ctx.fillText(`"${poster.slogan||''}"`, W/2, sY+4);
+                    };
+                    const finish = (dataUrl) => {
                       const a = document.createElement('a');
-                      a.href = selectedPoster.image;
-                      a.download = `${selectedPoster.teamName}_${selectedPoster.title}.png`;
+                      a.href = dataUrl;
+                      a.download = `${sanitizeFn(poster.teamName)}_${sanitizeFn(poster.title)}.png`;
                       a.click();
+                    };
+                    if (poster.image) {
+                      const img = new Image(); img.crossOrigin='anonymous';
+                      img.onload = () => { ctx.save(); ctx.beginPath(); ctx.roundRect(8,34,W-16,IMG_H-42,12); ctx.clip(); ctx.drawImage(img,8,34,W-16,IMG_H-42); ctx.restore(); drawBottom(); finish(canvas.toDataURL('image/png')); };
+                      img.onerror = () => { drawBottom(); finish(canvas.toDataURL('image/png')); };
+                      img.src = poster.image;
                     } else {
-                      // 이모지 포스터 PNG 변환 후 다운로드
-                      const canvas = document.createElement('canvas');
-                      canvas.width = 600; canvas.height = 400;
-                      const ctx = canvas.getContext('2d');
-                      ctx.fillStyle = '#1e1b4b';
-                      ctx.fillRect(0, 0, 600, 400);
-                      ctx.font = '72px serif';
-                      ctx.textAlign = 'center';
-                      ctx.fillText(selectedPoster.icon || '🌍', 300, 110);
-                      ctx.fillStyle = '#ffffff';
-                      ctx.font = 'bold 26px sans-serif';
-                      ctx.fillText(selectedPoster.title || '', 300, 170);
-                      ctx.font = '16px sans-serif';
-                      ctx.fillStyle = 'rgba(255,255,255,0.85)';
-                      const words = (selectedPoster.idea || '').split(' ');
-                      let line = ''; let y = 210;
-                      words.forEach(word => {
-                        const test = line + word + ' ';
-                        if (ctx.measureText(test).width > 520 && line) { ctx.fillText(line.trim(), 300, y); line = word + ' '; y += 24; } else { line = test; }
-                      });
-                      if (line) ctx.fillText(line.trim(), 300, y);
-                      ctx.fillStyle = '#34d399';
-                      ctx.font = 'italic 18px sans-serif';
-                      ctx.fillText(`"${selectedPoster.slogan || ''}"`, 300, 370);
-                      const a = document.createElement('a');
-                      a.href = canvas.toDataURL('image/png');
-                      a.download = `${selectedPoster.teamName}_${selectedPoster.title}.png`;
-                      a.click();
+                      ctx.font='120px serif'; ctx.textAlign='center'; ctx.fillText(poster.icon||'🌍', W/2, IMG_H/2+30);
+                      drawBottom(); finish(canvas.toDataURL('image/png'));
                     }
                   }}
                   className="btn btn-primary"
