@@ -494,23 +494,31 @@ function TeacherDashboard() {
           };
 
           if (poster.image) {
-            // 이미지 포스터: 그림을 상단에 그리고 하단에 텍스트
+            // 이미지 포스터: 비율 유지하며 상단에 그리기 (contain)
             const img = new Image();
             img.crossOrigin = 'anonymous';
             img.onload = () => {
-              // 이미지 영역 (패딩 포함)
               const pad = 8;
+              const areaX = pad, areaY = 36, areaW = W - pad * 2, areaH = IMG_H - 36 - pad;
+              // 흰 배경
               ctx.save();
               ctx.beginPath();
-              ctx.roundRect(pad, 34, W - pad * 2, IMG_H - 34 - pad, 12);
+              ctx.roundRect(areaX, areaY, areaW, areaH, 12);
               ctx.clip();
-              ctx.drawImage(img, pad, 34, W - pad * 2, IMG_H - 34 - pad);
+              ctx.fillStyle = '#ffffff';
+              ctx.fillRect(areaX, areaY, areaW, areaH);
+              // 비율 유지 (contain)
+              const scale = Math.min(areaW / img.width, areaH / img.height);
+              const dw = img.width * scale;
+              const dh = img.height * scale;
+              const dx = areaX + (areaW - dw) / 2;
+              const dy = areaY + (areaH - dh) / 2;
+              ctx.drawImage(img, dx, dy, dw, dh);
               ctx.restore();
               drawBottom();
               resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
             };
             img.onerror = () => {
-              // 이미지 로드 실패 시 빈 영역으로
               drawBottom();
               resolve({ dataUrl: canvas.toDataURL('image/png'), filename: `${sanitize(poster.teamName)}_${sanitize(poster.title)}.png` });
             };
@@ -773,7 +781,17 @@ function TeacherDashboard() {
                     };
                     if (poster.image) {
                       const img = new Image(); img.crossOrigin='anonymous';
-                      img.onload = () => { ctx.save(); ctx.beginPath(); ctx.roundRect(8,34,W-16,IMG_H-42,12); ctx.clip(); ctx.drawImage(img,8,34,W-16,IMG_H-42); ctx.restore(); drawBottom(); finish(canvas.toDataURL('image/png')); };
+                      img.onload = () => {
+                        const pad=8, areaX=pad, areaY=36, areaW=W-pad*2, areaH=IMG_H-36-pad;
+                        ctx.save();
+                        ctx.beginPath(); ctx.roundRect(areaX,areaY,areaW,areaH,12); ctx.clip();
+                        ctx.fillStyle='#ffffff'; ctx.fillRect(areaX,areaY,areaW,areaH);
+                        const scale=Math.min(areaW/img.width, areaH/img.height);
+                        const dw=img.width*scale, dh=img.height*scale;
+                        const dx=areaX+(areaW-dw)/2, dy=areaY+(areaH-dh)/2;
+                        ctx.drawImage(img,dx,dy,dw,dh);
+                        ctx.restore(); drawBottom(); finish(canvas.toDataURL('image/png'));
+                      };
                       img.onerror = () => { drawBottom(); finish(canvas.toDataURL('image/png')); };
                       img.src = poster.image;
                     } else {
