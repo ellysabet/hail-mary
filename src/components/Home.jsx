@@ -127,7 +127,7 @@ function Home() {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: 600, margin: 0 }}>
-                프로젝트 헤일메리 개인정보 처리방침
+                우주산업 진로탐험 개인정보 처리방침
               </h2>
               <button
                 onClick={() => setShowPrivacy(false)}
