@@ -25,8 +25,7 @@ export function createSession(code, teacherName) {
     round3JobExplained: false,
     round4JobExplained: false,
     round5JobExplained: false,
-    round6JobExplained: false,
-    round6Posters: []
+    round6JobExplained: false
   };
   return set(sessionRef, session)
     .then(() => session)
@@ -169,6 +168,49 @@ export function getRank(sessionCode, teamId) {
     const sortedTeams = [...session.teams].sort((a, b) => b.totalScore - a.totalScore);
     return sortedTeams.findIndex((t) => t.id === teamId) + 1;
   });
+}
+
+// ── 포스터 전용 함수 (세션 본체와 분리) ─────────────────────
+// 이미지가 큰 포스터를 세션 전체(set)에 얹어서 매번 다시 쓰지 않도록,
+// sessions/{code}/posters/{posterId} 경로에 개별로 저장합니다.
+// 이렇게 하면 점수/라운드 변경 등 다른 세션 업데이트가 발생해도
+// 포스터 이미지가 함께 재전송되지 않습니다.
+
+// 포스터 하나 추가 (세션 전체를 건드리지 않음)
+export function addPoster(code, posterData) {
+  const posterId = `poster_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const posterRef = ref(database, `sessions/${code}/posters/${posterId}`);
+  return set(posterRef, { ...posterData, id: posterId })
+    .then(() => posterId)
+    .catch((error) => {
+      console.error('Error adding poster:', error);
+      throw error;
+    });
+}
+
+// 포스터 목록만 실시간 구독 (교사 화면 전용 — 학생 화면은 구독하지 않음)
+export function subscribeToPosters(code, callback) {
+  const postersRef = ref(database, `sessions/${code}/posters`);
+  const unsubscribe = onValue(postersRef, (snapshot) => {
+    if (snapshot.exists()) {
+      callback(Object.values(snapshot.val()));
+    } else {
+      callback([]);
+    }
+  }, (error) => {
+    console.error('Error subscribing to posters:', error);
+  });
+  return unsubscribe;
+}
+
+// 라운드 6 초기화 시 포스터 전체 삭제
+export function clearPosters(code) {
+  const postersRef = ref(database, `sessions/${code}/posters`);
+  return remove(postersRef)
+    .catch((error) => {
+      console.error('Error clearing posters:', error);
+      throw error;
+    });
 }
 
 // 실시간 세션 구독
