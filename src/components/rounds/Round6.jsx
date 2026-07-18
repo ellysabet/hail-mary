@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { updateTeamScore, subscribeToSession, saveSession, updateMemberScore } from '../../utils/storage';
+import { updateTeamScore, subscribeToSession, updateMemberScore } from '../../utils/storage';
 
 function Round6({ team, sessionCode }) {
   const [stage, setStage] = useState('story');
@@ -257,12 +257,8 @@ function Round6({ team, sessionCode }) {
       return;
     }
 
-    const { getSession } = await import('../../utils/storage');
-    const session = await getSession(sessionCode);
-    if (!session.round6Posters) {
-      session.round6Posters = [];
-    }
-    
+    const { addPoster } = await import('../../utils/storage');
+
     const posterData = {
       teamId: team.id,
       teamName: team.name,
@@ -273,10 +269,11 @@ function Round6({ team, sessionCode }) {
       slogan: posterSlogan,
       timestamp: Date.now()
     };
-    
-    session.round6Posters.push(posterData);
-    
-    await saveSession(sessionCode, session);
+
+    // 세션 전체가 아니라 이 포스터 하나만 별도 경로에 저장
+    // (다른 학생 화면들이 세션을 구독하고 있어도 이미지가 함께 재전송되지 않음)
+    await addPoster(sessionCode, posterData);
+
     setPosterSubmitted(true);
     setStage('posterDone');
     // 포스터 제출 자체에는 점수 없음 → 퀴즈 정답 시에만 점수 부여
