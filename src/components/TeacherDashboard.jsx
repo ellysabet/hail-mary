@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useGame } from '../context/GameContext';
-import { getSession, saveSession, subscribeToSession, deleteSession } from '../utils/storage';
+import { getSession, saveSession, subscribeToSession, deleteSession, subscribeToPosters, clearPosters } from '../utils/storage';
 
 const getPersonalGrade = (score) => {
   if (score >= 500) return { grade: '우주 마스터',  color: '#FFD700', emoji: '🌟', bg: 'rgba(255,215,0,0.15)',    desc: '모든 임무 완벽 수행!' };
@@ -25,8 +25,16 @@ function TeacherDashboard() {
       if (session) {
         setTeams(session.teams || []);
         setCurrentRound(session.currentRound || 0);
-        setRound6Posters(session.round6Posters || []);
       }
+    });
+    return () => { if (unsubscribe) unsubscribe(); };
+  }, [sessionCode]);
+
+  // 포스터는 별도 경로를 구독 (점수/라운드 변경 시 이미지가 함께 재전송되지 않도록 분리)
+  useEffect(() => {
+    if (!sessionCode) return;
+    const unsubscribe = subscribeToPosters(sessionCode, (posters) => {
+      setRound6Posters(posters || []);
     });
     return () => { if (unsubscribe) unsubscribe(); };
   }, [sessionCode]);
@@ -65,8 +73,12 @@ function TeacherDashboard() {
       else if (round === 3) { session.round3JobExplained = false; session.round3QuizReady = false; }
       else if (round === 4) { session.round4JobExplained = false; session.round4QuizReady = false; }
       else if (round === 5) { session.round5JobExplained = false; session.round5VideoWatched = false; }
-      else if (round === 6) { session.round6JobExplained = false; session.round6Posters = []; session.round6QuizStarted = false; }
+      else if (round === 6) { session.round6JobExplained = false; session.round6QuizStarted = false; }
       await saveSession(sessionCode, session);
+      if (round === 6) {
+        // 포스터는 별도 경로에 있으므로 따로 초기화
+        await clearPosters(sessionCode);
+      }
       document.body.className = `round-${round}-bg`;
     } catch (e) { console.error(e); }
   };
