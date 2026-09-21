@@ -54,7 +54,14 @@ export function getSession(code) {
 // 세션 저장
 export function saveSession(code, sessionData) {
   const sessionRef = ref(database, `sessions/${code}`);
-  return set(sessionRef, sessionData)
+  // Firebase 규칙(.validate)이 code, createdAt 필드를 요구하므로
+  // 어떤 경로로 저장하더라도 두 필드가 항상 포함되도록 보정합니다.
+  const dataToSave = {
+    ...sessionData,
+    code,
+    createdAt: sessionData.createdAt || sessionData.startTime || Date.now()
+  };
+  return set(sessionRef, dataToSave)
     .catch((error) => {
       console.error('Error saving session:', error);
       throw error;
@@ -89,6 +96,8 @@ export function addTeam(sessionCode, teamName) {
       round5Score: 0,
       round6Score: 0
     };
+    // 빈 배열은 Firebase에 저장되지 않아 teams가 없을 수 있으므로 보정
+    if (!session.teams) session.teams = [];
     session.teams.push(newTeam);
     return saveSession(sessionCode, session).then(() => newTeam);
   });
